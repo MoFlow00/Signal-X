@@ -1,0 +1,38 @@
+name: Ultimate Telegram Scraper
+
+on:
+  workflow_dispatch: # يتيح لك زر "Run workflow" للتشغيل اليدوي
+  schedule:
+    - cron: '0 0 * * *' # تشغيل تلقائي يومياً منتصف الليل
+
+permissions:
+  contents: write # ضروري للسماح برفع التحديثات للمستودع
+
+jobs:
+  scrape-and-save:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run Scraper
+        run: python scraper.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add telegram_data.csv completed_keywords.txt
+          # سيتم الرفع فقط في حال وجود بيانات جديدة
+          git commit -m "Auto-update: Scraped new Telegram channels" || echo "No new data to commit"
+          git push
