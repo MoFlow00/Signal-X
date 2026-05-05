@@ -47,7 +47,7 @@ jobs:
           git pull --rebase origin main
           
           # إضافة الملفات لو موجودة
-          git add telegram_data.csv completed_keywords.txt || echo "No files to add"
+          git add . || echo "No files to add"
           
           # عمل الـ Commit والـ Push
           if git commit -m "Auto-update: Scraped data [$(date)]"; then
