@@ -1,7 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 import pandas as pd
-import re  # <--- هذا هو السطر الذي كان ناقصاً وتسبب في المشكلة
+import re
 import requests
 from bs4 import BeautifulSoup
 import random
@@ -12,11 +12,14 @@ import os
 # ======================
 # CONFIG
 # ======================
-PAGES_TO_SCRAPE = 3     # تم تقليلها لـ 3 لتقليل فرصة حظر جوجل السحابي
+PAGES_TO_SCRAPE = 3
 SAVE_FILE = "telegram_data.csv"
 PROGRESS_FILE = "completed_keywords.txt"
+# الحد الأقصى للتشغيل 25 دقيقة لتجنب حظر جوجل وضمان الرفع لـ GitHub
+MAX_RUNTIME_SECONDS = 25 * 60 
+START_TIME = time.time()
 
-KEYWORDS =  [
+KEYWORDS = [
     # Android / Apps
     "premium apk", "pro apps", "modded apps", "unlocked apk",
     "android mod", "cracked software", "nova launcher setup",
@@ -90,9 +93,17 @@ def save_progress(keyword):
     with open(PROGRESS_FILE, "a", encoding="utf-8") as f:
         f.write(f"{keyword}\n")
 
-def get_subscribers(username):
+def get_subscribers(raw_username):
+    lookup_name = raw_username.split("?")[0].split("#")[0]
+    if lookup_name.startswith("s/"):
+        lookup_name = lookup_name[2:]
+    if "/" in lookup_name and "joinchat" not in lookup_name.lower():
+        lookup_name = lookup_name.split("/")[0]
+        
+    if "joinchat" in lookup_name or "+" in lookup_name:
+        return "Private / Invite"
     try:
-        r = requests.get(f"https://t.me/{username}", timeout=10)
+        r = requests.get(f"https://t.me/{lookup_name}", timeout=10)
         soup = BeautifulSoup(r.text, "html.parser")
         el = soup.select_one(".tgme_page_extra")
         return el.text.strip() if el else "N/A"
@@ -102,10 +113,9 @@ def get_subscribers(username):
 async def run_scraper():
     completed = load_progress()
     
-    # تفريغ السجل إذا تم الانتهاء من جميع الكلمات للبدء من جديد
     if len(completed) >= len(KEYWORDS):
-        print("All keywords processed previously. Resetting progress...")
-        os.remove(PROGRESS_FILE)
+        print("All keywords processed. Resetting progress...")
+        if os.path.exists(PROGRESS_FILE): os.remove(PROGRESS_FILE)
         completed = set()
 
     async with async_playwright() as p:
@@ -115,13 +125,16 @@ async def run_scraper():
         )
         
         for keyword in KEYWORDS:
+            # التحقق من الوقت قبل البدء في كلمة جديدة
+            if time.time() - START_TIME > MAX_RUNTIME_SECONDS:
+                print(f"\n[!] Reached {MAX_RUNTIME_SECONDS/60} mins limit. Stopping for this session.")
+                break
+
             if keyword in completed:
-                print(f"Skipping '{keyword}' (Already processed)")
                 continue
 
-            print(f"\n[{keyword}] -> Starting search...")
+            print(f"[{keyword}] -> Searching...")
             page = await context.new_page()
-            
             encoded_query = urllib.parse.quote(keyword)
             target_url = f"https://xtea.pages.dev/search?q={encoded_query}"
             
@@ -130,85 +143,58 @@ async def run_scraper():
             
             try:
                 await page.goto(target_url, wait_until="networkidle", timeout=60000)
-                
                 for current_page in range(1, PAGES_TO_SCRAPE + 1):
                     try:
                         await page.wait_for_selector(".gsc-webResult", timeout=15000)
                         await page.wait_for_timeout(3000)
-                    except:
-                        break # لا توجد نتائج أخرى
+                    except: break
 
                     raw_html = await page.content()
                     decoded_html = urllib.parse.unquote(raw_html)
                     raw_matches = re.findall(r"t\.me\/[a-zA-Z0-9_\-\+\/\?=&]+", decoded_html)
                     
                     for link in raw_matches:
-                        path = link.split("t.me/")[1]
-                        clean_path = path.split("?")[0].split("&")[0].split("#")[0].strip()
-                        if clean_path.startswith("s/"):
-                            clean_path = clean_path[2:]
-                            
-                        if "joinchat" in clean_path.lower() or clean_path.startswith("+"):
-                            invite_links.add(clean_path)
+                        path = link.split("t.me/")[1].strip("/")
+                        if not path or path.lower() == "joinchat": continue
+                        
+                        if "joinchat" in path.lower() or path.startswith("+"):
+                            invite_links.add(path)
                         else:
-                            username_only = clean_path.split("/")[0]
-                            if len(username_only) > 4:
-                                usernames.add(username_only.lower())
+                            clean_user = path.split("?")[0].split("&")[0].split("/")[0]
+                            if clean_user.startswith("s/"): clean_user = clean_user[2:]
+                            if len(clean_user) > 4: usernames.add(clean_user.lower())
 
                     if current_page < PAGES_TO_SCRAPE:
                         next_btn = page.locator(f".gsc-cursor-page >> text='{current_page + 1}'")
                         if await next_btn.is_visible():
                             await next_btn.click()
                             await page.wait_for_timeout(3000)
-                        else:
-                            break
-                            
-            except Exception as e:
-                print(f"Error fetching {keyword}: {e}")
-                
+                        else: break
+            except: pass
             await page.close()
 
-            # --- استخراج وحفظ البيانات ---
             results = []
-            
             for user in usernames:
                 subs = get_subscribers(user)
-                results.append({
-                    "Keyword": keyword,
-                    "Channel Name": user,
-                    "Link": f"https://t.me/{user}",
-                    "Subscribers": subs
-                })
-                time.sleep(0.5) # تجنب حظر تليجرام
+                results.append({"Keyword": keyword, "Channel Name": user, "Link": f"https://t.me/{user}", "Subscribers": subs})
+                time.sleep(0.5)
 
             for invite in invite_links:
-                results.append({
-                    "Keyword": keyword,
-                    "Channel Name": invite,
-                    "Link": f"https://t.me/{invite}",
-                    "Subscribers": "Private / Invite"
-                })
+                results.append({"Keyword": keyword, "Channel Name": invite, "Link": f"https://t.me/{invite}", "Subscribers": "Private / Invite"})
 
             if results:
                 df = pd.DataFrame(results)
-                # الحفظ المباشر في CSV
                 if os.path.exists(SAVE_FILE):
                     df.to_csv(SAVE_FILE, mode='a', header=False, index=False, encoding="utf-8-sig")
                 else:
                     df.to_csv(SAVE_FILE, index=False, encoding="utf-8-sig")
-                
-                print(f"Saved {len(results)} channels for '{keyword}'")
-            else:
-                print(f"No channels found for '{keyword}'")
-
-            # توثيق اكتمال الكلمة المفتاحية
-            save_progress(keyword)
+                print(f"Saved {len(results)} items for '{keyword}'")
             
-            # راحة إجبارية لتجنب حظر IP السيرفر من جوجل
+            save_progress(keyword)
             time.sleep(random.uniform(5, 10))
 
         await browser.close()
-        print("\nAll tasks completed successfully!")
+        print("Session completed.")
 
 if __name__ == "__main__":
     asyncio.run(run_scraper())
