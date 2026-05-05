@@ -1,6 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 import pandas as pd
+import re  # <--- هذا هو السطر الذي كان ناقصاً وتسبب في المشكلة
 import requests
 from bs4 import BeautifulSoup
 import random
