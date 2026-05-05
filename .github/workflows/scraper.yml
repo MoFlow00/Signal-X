@@ -1,25 +1,23 @@
 name: Ultimate Telegram Scraper
 
 on:
-  workflow_dispatch: # للتشغيل اليدوي في أي وقت
+  workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *' # السكريبت هيشتغل لوحده تلقائياً كل 6 ساعات (4 مرات في اليوم)
+    - cron: '0 */2 * * *' # السكريبت سيعمل كل ساعتين ليأخذ IP جديداً ويكمل
 
 permissions:
-  contents: write # صلاحية الكتابة والرفع للمستودع
+  contents: write
 
 jobs:
   scrape-and-save:
     runs-on: ubuntu-latest
-    
-    # تحديد مهلة زمنية للعملية الواحدة (ساعة واحدة كفاية جداً لكل جولة)
-    timeout-minutes: 60 
+    timeout-minutes: 40 
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # لجلب كل التغييرات وتجنب مشاكل الـ Push
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -32,26 +30,19 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run Scraper
-        # السطر ده بيخلي الجوب تكمل حتى لو السكريبت وقف بسبب حظر جوجل أو إيرور
-        continue-on-error: true 
         run: python scraper.py
 
       - name: Commit and Push Changes
-        # "if: always()" تضمن رفع الداتا حتى لو الخطوة اللي قبلها حصل فيها Error
         if: always() 
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # سحب أي تغييرات حصلت في المستودع قبل الرفع لمنع التعارض (Conflict)
-          git pull --rebase origin main
+          # الحل الصحيح: Add و Commit أولاً ثم Pull و Push
+          git add .
+          git commit -m "Auto-update: Scraped data [$(date)]" || echo "No changes to commit"
           
-          # إضافة الملفات لو موجودة
-          git add . || echo "No files to add"
+          # سحب التحديثات مع حل التعارضات
+          git pull --rebase origin main || git merge --strategy-option theirs
           
-          # عمل الـ Commit والـ Push
-          if git commit -m "Auto-update: Scraped data [$(date)]"; then
-            git push origin main
-          else
-            echo "No changes to commit"
-          fi
+          git push origin main
