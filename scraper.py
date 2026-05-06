@@ -19,46 +19,134 @@ MAX_RUNTIME_SECONDS = 25 * 60
 START_TIME = time.time()
 
 KEYWORDS = [
+    # Android / Apps
     "premium apk", "pro apps", "modded apps", "unlocked apk",
     "android mod", "cracked software", "nova launcher setup",
     "android apps paid free", "mod apk download", "apk hacks",
     "تطبيقات مهكرة", "برامج برو", "أندرويد مدفوع",
     "ألعاب مهكرة", "تطبيقات معدلة", "نسخة احترافية",
+
+    # AI / Tech
     "machine learning", "best ai tools", "gpt4", "ai automation",
     "chatgpt tools", "ai prompts", "openai tools", "llm tools",
     "ذكاء اصطناعي", "أدوات الذكاء", "بوتات تليجرام",
     "تقنيات حديثة", "شروحات تقنية", "مواقع ذكاء اصطناعي",
+
+    # Trending AI
+    "sora ai", "claude ai", "gemini ai", "cursor ai",
+    "bolt ai", "lovable ai", "deepseek", "suno ai",
+    "capcut pro",
+
+    # Programming / Learning
     "free courses", "udemy coupons", "programming scripts",
     "github repos", "python coding", "excel tutorials",
     "data analysis python", "automation scripts",
     "كورسات مجانية", "دورة برمجية", "تعليم إكسيل",
     "تعلم البرمجة", "مكتبات بايثون", "كتب تقنية",
+
+    # Books / Study
+    "pdf books", "engineering books", "medical books",
+    "ielts materials", "university notes", "study resources",
+    "research papers", "academic resources",
+    "ebooks free", "paid courses free",
+    "ملفات pdf", "كتب جامعية",
+
+    # UAE / Deals
     "uae offers", "dubai discounts", "coupon codes",
     "amazon deals uae", "noon coupons",
     "uae promo codes", "dubai deals today",
     "عروض الإمارات", "أكواد خصم",
     "تخفيضات دبي", "وفر فلوسك",
+
+    # Media / IPTV
     "iptv links", "netflix premium", "movies hd",
     "live tv", "series hd", "arab movies",
     "قنوات مشفرة", "أفلام وثائقية", "بث مباشر",
     "سيرفرات iptv", "مسلسلات حصرية",
+
+    # Shared / Premium
+    "premium accounts", "shared accounts",
+    "streaming accounts", "spotify premium",
+    "canva pro", "youtube premium",
+    "adobe crack", "windows activator",
+    "office activator", "software keys",
+    "serial keys", "warez",
+    "كورسات مدفوعة مجانا",
+    "اشتراكات مجانية",
+
+    # Gaming
+    "gaming leaks", "game mods",
+    "steam free games", "pc games repack",
+    "gaming news", "ps5 jailbreak",
+    "switch mods", "cheat engine",
+    "قنوات ألعاب",
+
+    # APIs / Tools
     "free api key", "free llm", "open source tools",
     "telegram bots", "automation tools",
     "مواقع مفيدة", "قنوات مفيدة", "معلومات عامة",
+
+    # Telegram discovery
+    "telegram channels",
+    "best telegram channels",
+    "top telegram groups",
+    "telegram communities",
+    "telegram groups",
+    "telegram mega groups",
+    "join telegram channel",
+    "telegram invite links",
+    "telegram public channels",
+    "telegram supergroups",
+    "telegram communities list",
+    "telegram hidden gems",
+    "telegram archive",
+    "telegram hub",
+    "telegram collection",
+
+    # Telegram search / discovery
     "telegram search engine", "telegram directory", "telegram channels list",
     "telegram channels search", "telegram groups search", "telegram finder",
     "telegram explorer", "telegram catalog", "telegram index",
+
+    # Bots & tools
     "telegram search bot", "telegram finder bot", "telegram index bot",
     "telegram scraper bot", "telegram crawler", "telegram analytics bot",
+
+    # Growth / discovery
     "telegram trending channels", "telegram popular channels",
     "telegram viral channels", "telegram growth tips",
     "telegram marketing", "telegram seo",
+
+    # Tech side
     "telegram api", "telegram scraping", "telegram data",
     "telegram automation tools", "telegram bots development",
-    "محرك بحث تيليجرام", "بحث قنوات تيليجرام",
-    "دليل قنوات تيليجرام", "اكتشاف قنوات",
-    "بوت بحث تيليجرام", "قنوات تيليجرام مفيدة",
-    "أقوى قنوات تيليجرام", "قنوات ترند تيليجرام"
+
+    # Regional
+    "india telegram channels",
+    "arab telegram groups",
+    "uae telegram",
+    "egypt telegram",
+    "dubai community",
+    "saudi telegram",
+
+    # Arabic Telegram
+    "محرك بحث تيليجرام",
+    "بحث قنوات تيليجرام",
+    "دليل قنوات تيليجرام",
+    "اكتشاف قنوات",
+    "بوت بحث تيليجرام",
+    "قنوات تيليجرام مفيدة",
+    "أقوى قنوات تيليجرام",
+    "قنوات ترند تيليجرام",
+    "جروبات تيليجرام",
+    "قنوات تيليجرام",
+    "روابط تيليجرام",
+    "قنوات تقنية",
+    "جروبات تعليم",
+    "قنوات ذكاء اصطناعي",
+    "قنوات أفلام",
+    "تسريبات",
+    "برامج مهكرة"
 ]
 
 # تعديل السلوك: ترتيب عشوائي للكلمات في كل تشغيل
