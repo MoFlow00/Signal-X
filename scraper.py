@@ -31,7 +31,7 @@ KEYWORDS = [
     "machine learning", "best ai tools", "gpt4", "ai automation",
     "chatgpt tools", "ai prompts", "openai tools", "llm tools",
     "ذكاء اصطناعي", "أدوات الذكاء", "بوتات تليجرام",
-    "تقنيات حديثة", "شروحات تقنية",
+    "تقنيات حديثة", "شروحات تقنية","مواقع ذكاء اصطناعي",
 
     # Programming / Learning
     "free courses", "udemy coupons", "programming scripts",
