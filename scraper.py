@@ -12,7 +12,7 @@ import os
 # ======================
 # CONFIG
 # ======================
-PAGES_TO_SCRAPE = 3
+PAGES_TO_SCRAPE = 10
 SAVE_FILE = "telegram_data.csv"
 PROGRESS_FILE = "completed_keywords.txt"
 MAX_RUNTIME_SECONDS = 25 * 60 
@@ -208,7 +208,7 @@ async def run_scraper():
                 for current_page in range(1, PAGES_TO_SCRAPE + 1):
                     try:
                         await page.wait_for_selector(".gsc-webResult", timeout=15000)
-                        await page.wait_for_timeout(4000) # زيادة وقت الانتظار
+                        await page.wait_for_timeout(15000) # زيادة وقت الانتظار
                     except: break
 
                     raw_html = await page.content()
