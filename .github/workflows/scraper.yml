@@ -33,14 +33,11 @@ jobs:
         run: python scraper.py
 
       - name: Commit and Push Changes
-        if: always() 
+        if: always()
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
           git add .
           git commit -m "Hourly Auto-update: Scraped data [$(date)]" || echo "No changes to commit"
-          
           git pull --rebase origin main || git merge --strategy-option theirs
-          
           git push origin main
