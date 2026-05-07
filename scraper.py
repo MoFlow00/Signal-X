@@ -15,7 +15,7 @@ import os
 PAGES_TO_SCRAPE = 10
 SAVE_FILE = "telegram_data.csv"
 PROGRESS_FILE = "completed_keywords.txt"
-MAX_RUNTIME_SECONDS = 25 * 60 
+MAX_RUNTIME_SECONDS = 30 * 60 
 START_TIME = time.time()
 
 KEYWORDS = [
