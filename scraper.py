@@ -13,9 +13,8 @@ import json
 # ======================
 # CONFIG
 # ======================
-PAGES_TO_SCRAPE = 10
+PAGES_TO_SCRAPE = 5  # تقليل الصفحات لتجنب البلوك السريع
 SAVE_FILE = "telegram_data.csv"
-# ملف التقدم الآن بصيغة JSON لحفظ الكلمة والصفحة بدقة
 PROGRESS_FILE = "progress_status.json"
 MAX_RUNTIME_SECONDS = 30 * 60 
 START_TIME = time.time()
@@ -153,8 +152,10 @@ KEYWORDS = [
 
 def load_progress():
     if os.path.exists(PROGRESS_FILE):
-        with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: return {}
     return {}
 
 def save_progress(keyword, page):
@@ -176,50 +177,53 @@ def get_subscribers(raw_username):
 
 async def run_scraper():
     progress = load_progress()
-    
+    fail_count = 0  # عداد الفشل المتتالي للـ Circuit Breaker
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         )
         
         for keyword in KEYWORDS:
-            # تخطي الكلمات التي انتهت صفحاتها بالكامل
+            # القاطع الكهربائي: لو فشل في 3 كلمات ورا بعض يوقف الجلسة فوراً
+            if fail_count >= 3:
+                print("\n[!] Circuit Breaker Triggered: 3 consecutive timeouts. Google blocked the IP. Exiting...")
+                break
+
             last_page_finished = progress.get(keyword, 0)
             if last_page_finished >= PAGES_TO_SCRAPE:
                 continue
 
             print(f"\n>>> [{keyword}] -> Resuming from page {last_page_finished + 1}")
-            
             page = await context.new_page()
             encoded_query = urllib.parse.quote(keyword)
             target_url = f"https://xtea.pages.dev/search?q={encoded_query}"
             
+            keyword_success = False # مؤشر لنجاح الكلمة الحالية
+
             try:
                 await page.goto(target_url, wait_until="networkidle", timeout=60000)
                 
-                # الدخول مباشرة على الصفحة التي توقفنا عندها
                 for current_page in range(1, PAGES_TO_SCRAPE + 1):
-                    # التحقق من الوقت قبل معالجة الصفحة
                     if time.time() - START_TIME > MAX_RUNTIME_SECONDS:
-                        print(f"[!] Time limit reached at page {current_page}. Saving and exiting...")
+                        print(f"[!] Time limit reached. Saving and exiting...")
                         await browser.close()
                         return
 
-                    # تخطي الصفحات التي تم سحبها مسبقاً
                     if current_page <= last_page_finished:
                         continue
 
                     print(f"  -- Scraping page {current_page}...")
                     try:
-                        # التنقل للصفحة المطلوبة
                         if current_page > 1:
                             next_btn = page.locator(f".gsc-cursor-page >> text='{current_page}'")
                             if await next_btn.is_visible():
                                 await next_btn.click()
-                                await page.wait_for_timeout(10000) # وقت لتحميل النتائج
+                                await page.wait_for_timeout(15000) # وقت كافٍ للتحميل
                             else: break
                         
+                        # فحص وجود النتائج
                         await page.wait_for_selector(".gsc-webResult", timeout=15000)
                         
                         raw_html = await page.content()
@@ -249,23 +253,28 @@ async def run_scraper():
                             df.to_csv(SAVE_FILE, mode='a', header=not os.path.exists(SAVE_FILE), index=False, encoding="utf-8-sig")
                             print(f"  [+] Saved {len(results)} items from page {current_page}")
                         
-                        # حفظ التقدم بعد كل صفحة بنجاح
                         save_progress(keyword, current_page)
+                        keyword_success = True
+                        fail_count = 0 # تصفير عداد الفشل عند النجاح في أي صفحة
                         time.sleep(random.uniform(5, 10))
 
                     except Exception as e:
-                        print(f"  [!] Error on page {current_page}: {e}")
-                        break
+                        print(f"  [!] Error on page {current_page}: Timeout/No Results")
+                        break # اخرج من صفحات الكلمة دي وجرب الكلمة اللي بعدها
+
+                if not keyword_success:
+                    fail_count += 1
+                    print(f"  [!] Fail count incremented: {fail_count}/3")
 
             except Exception as e:
-                print(f"[!] Error loading keyword {keyword}: {e}")
+                print(f"[!] Critical Error loading keyword {keyword}: {e}")
+                fail_count += 1
             
             await page.close()
-            print(f"Waiting before next keyword...")
             time.sleep(random.uniform(20, 40))
 
         await browser.close()
-        print("All Keywords completed.")
+        print("Session completed.")
 
 if __name__ == "__main__":
     asyncio.run(run_scraper())
