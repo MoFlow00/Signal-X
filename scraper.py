@@ -8,13 +8,15 @@ import random
 import time
 import urllib.parse
 import os
+import json
 
 # ======================
 # CONFIG
 # ======================
 PAGES_TO_SCRAPE = 10
 SAVE_FILE = "telegram_data.csv"
-PROGRESS_FILE = "completed_keywords.txt"
+# ملف التقدم الآن بصيغة JSON لحفظ الكلمة والصفحة بدقة
+PROGRESS_FILE = "progress_status.json"
 MAX_RUNTIME_SECONDS = 30 * 60 
 START_TIME = time.time()
 
@@ -149,18 +151,17 @@ KEYWORDS = [
     "برامج مهكرة"
 ]
 
-# تعديل السلوك: ترتيب عشوائي للكلمات في كل تشغيل
-random.shuffle(KEYWORDS)
-
 def load_progress():
     if os.path.exists(PROGRESS_FILE):
         with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
-            return set(line.strip() for line in f if line.strip())
-    return set()
+            return json.load(f)
+    return {}
 
-def save_progress(keyword):
-    with open(PROGRESS_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{keyword}\n")
+def save_progress(keyword, page):
+    progress = load_progress()
+    progress[keyword] = page
+    with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+        json.dump(progress, f, ensure_ascii=False, indent=4)
 
 def get_subscribers(raw_username):
     lookup_name = raw_username.split("?")[0].split("#")[0]
@@ -174,14 +175,8 @@ def get_subscribers(raw_username):
     except: return "error"
 
 async def run_scraper():
-    completed = load_progress()
+    progress = load_progress()
     
-    # تعديل السلوك: إيقاف التصفير التلقائي للسجل لضمان عدم التكرار
-    if len(completed) >= len(KEYWORDS):
-        print("!!! ALL KEYWORDS COMPLETED SUCCESSFULLY !!!")
-        print("Add new keywords to the list to continue.")
-        return
-
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
@@ -189,70 +184,88 @@ async def run_scraper():
         )
         
         for keyword in KEYWORDS:
-            if time.time() - START_TIME > MAX_RUNTIME_SECONDS:
-                print(f"\n[!] Time limit reached. Saving progress...")
-                break
-
-            if keyword in completed:
+            # تخطي الكلمات التي انتهت صفحاتها بالكامل
+            last_page_finished = progress.get(keyword, 0)
+            if last_page_finished >= PAGES_TO_SCRAPE:
                 continue
 
-            print(f"[{keyword}] -> Searching...")
+            print(f"\n>>> [{keyword}] -> Resuming from page {last_page_finished + 1}")
+            
             page = await context.new_page()
             encoded_query = urllib.parse.quote(keyword)
             target_url = f"https://xtea.pages.dev/search?q={encoded_query}"
             
-            usernames, invite_links = set(), set()
-            
             try:
                 await page.goto(target_url, wait_until="networkidle", timeout=60000)
+                
+                # الدخول مباشرة على الصفحة التي توقفنا عندها
                 for current_page in range(1, PAGES_TO_SCRAPE + 1):
+                    # التحقق من الوقت قبل معالجة الصفحة
+                    if time.time() - START_TIME > MAX_RUNTIME_SECONDS:
+                        print(f"[!] Time limit reached at page {current_page}. Saving and exiting...")
+                        await browser.close()
+                        return
+
+                    # تخطي الصفحات التي تم سحبها مسبقاً
+                    if current_page <= last_page_finished:
+                        continue
+
+                    print(f"  -- Scraping page {current_page}...")
                     try:
+                        # التنقل للصفحة المطلوبة
+                        if current_page > 1:
+                            next_btn = page.locator(f".gsc-cursor-page >> text='{current_page}'")
+                            if await next_btn.is_visible():
+                                await next_btn.click()
+                                await page.wait_for_timeout(10000) # وقت لتحميل النتائج
+                            else: break
+                        
                         await page.wait_for_selector(".gsc-webResult", timeout=15000)
-                        await page.wait_for_timeout(15000) # زيادة وقت الانتظار
-                    except: break
+                        
+                        raw_html = await page.content()
+                        raw_matches = re.findall(r"t\.me\/[a-zA-Z0-9_\-\+\/\?=&]+", urllib.parse.unquote(raw_html))
+                        
+                        results = []
+                        usernames = set()
+                        for link in raw_matches:
+                            path = link.split("t.me/")[1].strip("/")
+                            if not path or path.lower() == "joinchat": continue
+                            if not ("joinchat" in path.lower() or path.startswith("+")):
+                                clean_user = path.split("?")[0].split("&")[0].split("/")[0]
+                                if clean_user.startswith("s/"): clean_user = clean_user[2:]
+                                if len(clean_user) > 4: usernames.add(clean_user.lower())
 
-                    raw_html = await page.content()
-                    raw_matches = re.findall(r"t\.me\/[a-zA-Z0-9_\-\+\/\?=&]+", urllib.parse.unquote(raw_html))
-                    
-                    for link in raw_matches:
-                        path = link.split("t.me/")[1].strip("/")
-                        if not path or path.lower() == "joinchat": continue
-                        if "joinchat" in path.lower() or path.startswith("+"): invite_links.add(path)
-                        else:
-                            clean_user = path.split("?")[0].split("&")[0].split("/")[0]
-                            if clean_user.startswith("s/"): clean_user = clean_user[2:]
-                            if len(clean_user) > 4: usernames.add(clean_user.lower())
+                        for user in usernames:
+                            results.append({
+                                "Keyword": keyword, 
+                                "Channel Name": user, 
+                                "Link": f"https://t.me/{user}", 
+                                "Subscribers": get_subscribers(user)
+                            })
+                            time.sleep(random.uniform(1, 2))
 
-                    if current_page < PAGES_TO_SCRAPE:
-                        next_btn = page.locator(f".gsc-cursor-page >> text='{current_page + 1}'")
-                        if await next_btn.is_visible():
-                            await next_btn.click()
-                            await page.wait_for_timeout(3000)
-                        else: break
-            except: pass
-            await page.close()
+                        if results:
+                            df = pd.DataFrame(results)
+                            df.to_csv(SAVE_FILE, mode='a', header=not os.path.exists(SAVE_FILE), index=False, encoding="utf-8-sig")
+                            print(f"  [+] Saved {len(results)} items from page {current_page}")
+                        
+                        # حفظ التقدم بعد كل صفحة بنجاح
+                        save_progress(keyword, current_page)
+                        time.sleep(random.uniform(5, 10))
 
-            results = []
-            for user in usernames:
-                results.append({"Keyword": keyword, "Channel Name": user, "Link": f"https://t.me/{user}", "Subscribers": get_subscribers(user)})
-                time.sleep(random.uniform(1, 2)) # تأخير بسيط بين فحص المشتركين
+                    except Exception as e:
+                        print(f"  [!] Error on page {current_page}: {e}")
+                        break
 
-            for invite in invite_links:
-                results.append({"Keyword": keyword, "Channel Name": invite, "Link": f"https://t.me/{invite}", "Subscribers": "Private / Invite"})
-
-            if results:
-                df = pd.DataFrame(results)
-                df.to_csv(SAVE_FILE, mode='a', header=not os.path.exists(SAVE_FILE), index=False, encoding="utf-8-sig")
-                print(f"Saved {len(results)} items for '{keyword}'")
+            except Exception as e:
+                print(f"[!] Error loading keyword {keyword}: {e}")
             
-            save_progress(keyword)
-            # تعديل السلوك: زيادة وقت الراحة بين الكلمات لتفادي الحظر
-            wait_time = random.uniform(20, 45)
-            print(f"Waiting {int(wait_time)}s before next keyword...")
-            time.sleep(wait_time)
+            await page.close()
+            print(f"Waiting before next keyword...")
+            time.sleep(random.uniform(20, 40))
 
         await browser.close()
-        print("Session completed.")
+        print("All Keywords completed.")
 
 if __name__ == "__main__":
     asyncio.run(run_scraper())
