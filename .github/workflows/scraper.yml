@@ -29,6 +29,11 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
+      # --- 1. إشعار بداية السكربت ---
+      - name: Notify Start
+        run: |
+          curl -H "Title: Scraper Task" -d "Xtea Started 🚀" ntfy.sh/Xtea_scraper
+
       - name: Run Scraper
         run: python scraper.py
 
@@ -41,3 +46,13 @@ jobs:
           git commit -m "Hourly Auto-update: Scraped data [$(date)]" || echo "No changes to commit"
           git pull --rebase origin main || git merge --strategy-option theirs
           git push origin main
+
+      # --- 2. إشعار حالة النهاية (نجاح أو فشل) ---
+      - name: Notify Final Status
+        if: always()
+        run: |
+          curl -H "Title: Scraper Finished" \
+               -H "Priority: high" \
+               -H "Tags: robot,${{ job.status }}" \
+               -d "Xtea Finished : ${{ job.status }}" \
+               ntfy.sh/Xtea_scraper
