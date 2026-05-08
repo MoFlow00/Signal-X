@@ -142,5 +142,15 @@
     "telegram catalog": 5,
     "telegram index": 5,
     "telegram search bot": 5,
-    "telegram finder bot": 2
+    "telegram finder bot": 5,
+    "telegram index bot": 5,
+    "telegram scraper bot": 5,
+    "telegram crawler": 5,
+    "telegram analytics bot": 5,
+    "telegram trending channels": 5,
+    "telegram popular channels": 5,
+    "telegram viral channels": 5,
+    "telegram growth tips": 5,
+    "telegram marketing": 5,
+    "telegram seo": 5
 }
