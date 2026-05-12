@@ -3,40 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إمبراطورية تليجرام - Dashboard</title>
+    <title>إمبراطورية تليجرام - Live Timeline</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        :root { --primary-color: #0088cc; --bg-color: #f0f2f5; }
+        :root { --tg-color: #0088cc; --bg-color: #f4f7f9; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); margin: 0; padding: 10px; }
+        
         .header { text-align: center; margin-bottom: 20px; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header h1 { color: var(--primary-color); margin: 0 0 15px 0; font-size: 24px; }
-        .search-box { padding: 12px; width: 90%; max-width: 500px; border-radius: 25px; border: 2px solid var(--primary-color); outline: none; font-size: 16px; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
-        .card { background: white; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; height: 600px; display: flex; flex-direction: column; }
-        .card-header { padding: 10px 15px; background: var(--primary-color); color: white; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-        .sub-count { background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 8px; }
-        .iframe-container { flex: 1; background: #fff; position: relative; }
-        iframe { width: 100%; height: 100%; border: none; }
-        .card-footer { padding: 10px; text-align: center; background: #f9f9f9; border-top: 1px solid #eee; }
-        .open-btn { background: var(--primary-color); color: white; text-decoration: none; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .header h1 { color: var(--tg-color); margin: 0 0 15px 0; font-size: 22px; }
+        .search-box { padding: 12px; width: 90%; max-width: 500px; border-radius: 25px; border: 2px solid var(--tg-color); outline: none; font-size: 16px; text-align: center; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 10px; }
+        .card { background: transparent; border-radius: 15px; overflow: hidden; min-height: 400px; display: flex; flex-direction: column; }
+        
+        /* تجميل مكان الودجت */
+        .widget-loader { padding: 10px; background: #fff; border-radius: 15px; border: 1px solid #ddd; flex: 1; }
+        
         .pagination { text-align: center; margin: 20px 0; display: flex; justify-content: center; align-items: center; gap: 10px; }
-        button { padding: 8px 20px; font-size: 14px; cursor: pointer; background: var(--primary-color); color: white; border: none; border-radius: 20px; }
+        button { padding: 10px 25px; font-size: 14px; cursor: pointer; background: var(--tg-color); color: white; border: none; border-radius: 20px; font-weight: bold; }
         button:disabled { background: #ccc; }
-        .loader { text-align: center; font-size: 18px; margin-top: 50px; color: var(--primary-color); }
+        #pageInfo { font-size: 14px; font-weight: bold; color: #555; }
+        
+        .loader { text-align: center; font-size: 18px; margin-top: 50px; color: var(--tg-color); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>📡 إمبراطورية تليجرام</h1>
-        <input type="text" id="searchInput" class="search-box" placeholder="بحث في 7000 قناة..." onkeyup="handleSearch()">
+        <h1>📡 رادار القنوات الذكي</h1>
+        <input type="text" id="searchInput" class="search-box" placeholder="ابحث في الـ 7000 قناة..." onkeyup="handleSearch()">
     </div>
 
-    <div id="loading" class="loader">جاري سحب البيانات...</div>
+    <div id="loading" class="loader">جاري تهيئة الرادار...</div>
 
     <div class="pagination" id="paginationUI" style="display: none;">
         <button id="prevBtn" onclick="changePage(-1)">السابق</button>
-        <span id="pageInfo">صفحة 1</span>
+        <span id="pageInfo"></span>
         <button id="nextBtn" onclick="changePage(1)">التالي</button>
     </div>
 
@@ -44,30 +46,26 @@
 
     <script>
         const GITHUB_CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
-
         let allData = [];
         let filteredData = [];
         let currentPage = 0;
-        const pageSize = 12;
+        const pageSize = 6; // قللنا العدد لـ 6 عشان الودجت تقيلة في التحميل وتشتغل بسلاسة
 
         async function fetchData() {
             try {
                 const response = await fetch(GITHUB_CSV_URL);
                 const csvText = await response.text();
                 Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
+                    header: true, skipEmptyLines: true,
                     complete: function(results) {
-                        allData = results.data.filter(row => row.Link && row.Link.includes('t.me/'));
+                        allData = results.data.filter(row => row.Link && !row.Link.includes('+') && !row.Link.includes('joinchat'));
                         filteredData = [...allData];
                         document.getElementById('loading').style.display = 'none';
                         document.getElementById('paginationUI').style.display = 'flex';
                         render();
                     }
                 });
-            } catch (error) {
-                document.getElementById('loading').innerText = "خطأ في التحميل!";
-            }
+            } catch (e) { document.getElementById('loading').innerText = "خطأ في الاتصال!"; }
         }
 
         function render() {
@@ -75,30 +73,28 @@
             wrapper.innerHTML = '';
             const items = filteredData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
-            items.forEach(item => {
-                const link = item.Link.trim();
-                const isPrivate = link.includes('+') || link.includes('joinchat');
-                const username = isPrivate ? "" : link.split('t.me/')[1]?.split('/')[0]?.split('?')[0];
-                
+            items.forEach((item, index) => {
+                const username = item.Link.split('t.me/')[1].split('/')[0].split('?')[0];
                 const card = document.createElement('div');
                 card.className = 'card';
                 
-                // تم إزالة الـ Sandbox لتقليل القيود
-                const iframeHtml = isPrivate ? 
-                    `<div style="padding:50px; text-align:center; color:#888;">قناة خاصة</div>` : 
-                    `<iframe src="https://t.me/s/${username}" loading="lazy"></iframe>`;
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span># ${item.Keyword || 'عام'}</span>
-                        <span class="sub-count">${item.Subscribers || 'N/A'}</span>
-                    </div>
-                    <div class="iframe-container">${iframeHtml}</div>
-                    <div class="card-footer">
-                        <a href="${link}" target="_blank" class="open-btn">فتح في Telegram 🚀</a>
-                    </div>
-                `;
+                // إنشاء حاوية للودجت
+                const widgetContainer = document.createElement('div');
+                widgetContainer.className = 'widget-loader';
+                widgetContainer.id = `tg-widget-${index}`;
+                
+                card.appendChild(widgetContainer);
                 wrapper.appendChild(card);
+
+                // حقن سكريبت تليجرام الرسمي لكل قناة
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = "https://telegram.org/js/telegram-widget.js?22";
+                script.setAttribute("data-telegram-post", `${username}/latest`); // بيجيب آخر بوست
+                script.setAttribute("data-width", "100%");
+                script.setAttribute("data-userpic", "true");
+                
+                widgetContainer.appendChild(script);
             });
 
             document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1} من ${Math.ceil(filteredData.length / pageSize)}`;
