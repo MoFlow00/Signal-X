@@ -498,9 +498,17 @@ async function initRadar() {
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-        allData = results.data.filter(row => 
-          row.LatestID && row.LatestID !== "None" && row.Link
-        );
+allData = results.data.filter(row => {
+  const latestId = String(row.LatestID || '').trim();
+
+  return (
+    row.Link &&
+    latestId &&
+    latestId !== "None" &&
+    latestId !== "NaN" &&
+    !isNaN(parseInt(latestId))
+  );
+});
         filteredData = [...allData];
         document.getElementById('loading').style.display = 'none';
         renderPosts();
