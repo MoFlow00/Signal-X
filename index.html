@@ -1,107 +1,418 @@
-<script>
-const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
-let allData = [];
-let currentPage = 0;
-const pageSize = 12;
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>رادار تليجرام - Live View</title>
 
-async function init() {
-    try {
-        const res = await fetch(CSV_URL);
-        if (!res.ok) throw new Error('CSV load failed');
-        const text = await res.text();
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-        Papa.parse(text, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                allData = results.data.filter(d => d.Link && d.Link.includes('t.me/') && !d.Link.includes('+'));
-                render();
+    <style>
+        :root{
+            --tg-blue:#0088cc;
+            --bg:#e7ebf0;
+            --card:#ffffff;
+            --text:#1f2937;
+            --muted:#6b7280;
+            --border:#e5e7eb;
+            --shadow:0 8px 24px rgba(0,0,0,.08);
+            --radius:18px;
+        }
+
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:Tahoma, Arial, sans-serif;
+            background:var(--bg);
+            color:var(--text);
+            padding:12px;
+        }
+
+        .header{
+            text-align:center;
+            background:var(--card);
+            padding:20px;
+            border-radius:var(--radius);
+            margin-bottom:20px;
+            box-shadow:var(--shadow);
+        }
+
+        .header h1{
+            margin:0 0 14px;
+            font-size:28px;
+        }
+
+        .search-wrap{
+            display:flex;
+            justify-content:center;
+        }
+
+        #search{
+            width:min(900px, 90%);
+            padding:14px 18px;
+            border-radius:999px;
+            border:1px solid #d1d5db;
+            outline:none;
+            font-size:15px;
+            background:#fff;
+        }
+
+        .pagination{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:14px;
+            margin:18px 0 22px;
+            flex-wrap:wrap;
+        }
+
+        button{
+            padding:10px 22px;
+            border:none;
+            border-radius:999px;
+            background:var(--tg-blue);
+            color:#fff;
+            cursor:pointer;
+            font-weight:700;
+            font-size:14px;
+        }
+
+        button:disabled{
+            background:#bfc7cf;
+            cursor:not-allowed;
+        }
+
+        #pageInfo{
+            font-weight:700;
+            color:var(--text);
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+            gap:18px;
+        }
+
+        .card{
+            background:var(--card);
+            border-radius:var(--radius);
+            overflow:hidden;
+            box-shadow:var(--shadow);
+            display:flex;
+            flex-direction:column;
+            min-height:520px;
+        }
+
+        .card-header{
+            background:var(--tg-blue);
+            color:#fff;
+            padding:12px 14px;
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+            font-size:12px;
+            align-items:center;
+        }
+
+        .card-header span{
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+
+        .post-body{
+            flex:1;
+            padding:12px;
+            overflow:auto;
+            background:#f8fafc;
+            position:relative;
+            min-height:380px;
+        }
+
+        .loader-inner,
+        .empty-state,
+        .error-state{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            min-height:320px;
+            color:var(--muted);
+            font-size:14px;
+            line-height:1.8;
+            padding:20px;
+        }
+
+        .card-footer{
+            border-top:1px solid var(--border);
+            padding:12px;
+            display:flex;
+            justify-content:center;
+            gap:10px;
+            flex-wrap:wrap;
+        }
+
+        .card-footer a{
+            text-decoration:none;
+            color:var(--tg-blue);
+            font-size:13px;
+            font-weight:700;
+        }
+
+        .meta-badge{
+            background:#eef6fb;
+            color:#065f8f;
+            border:1px solid #cfe8f7;
+            padding:6px 10px;
+            border-radius:999px;
+            font-size:12px;
+        }
+
+        .hidden{
+            display:none !important;
+        }
+
+        .notice{
+            max-width:850px;
+            margin:0 auto 20px;
+            background:#fff7ed;
+            border:1px solid #fed7aa;
+            color:#9a3412;
+            padding:12px 16px;
+            border-radius:14px;
+            line-height:1.8;
+            box-shadow:var(--shadow);
+        }
+
+        @media (max-width: 640px){
+            .card{min-height:500px}
+            .post-body{min-height:340px}
+            .header h1{font-size:22px}
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📡 رادار تليجرام</h1>
+        <div class="search-wrap">
+            <input type="text" id="search" placeholder="ابحث في القنوات أو الكلمات المفتاحية..." />
+        </div>
+    </div>
+
+    <div class="notice">
+        لعرض المنشور داخل البطاقة بشكل رسمي من تيليجرام، أضف عمود <strong>MessageID</strong> داخل ملف CSV. بدون هذا العمود سيتم عرض رابط القناة فقط.
+    </div>
+
+    <div class="pagination">
+        <button id="prev" type="button">السابق</button>
+        <span id="pageInfo">...</span>
+        <button id="next" type="button">التالي</button>
+    </div>
+
+    <div id="wrapper" class="grid"></div>
+
+    <script>
+        const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
+
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 0;
+        const pageSize = 12;
+
+        function normalizeLink(link = '') {
+            return link.trim().replace('http://', 'https://');
+        }
+
+        function extractUsername(link = '') {
+            try {
+                const clean = normalizeLink(link)
+                    .replace('https://t.me/', '')
+                    .replace('https://telegram.me/', '')
+                    .replace('@', '')
+                    .split('?')[0]
+                    .split('/')[0]
+                    .trim();
+
+                return clean || '';
+            } catch {
+                return '';
             }
-        });
-    } catch (e) {
-        document.getElementById('wrapper').innerHTML = '<div class="loader-inner">فشل في تحميل ملف القنوات</div>';
-    }
-}
-
-async function fetchPostHTML(username, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    try {
-        const targetUrl = 'https://t.me/s/' + username;
-        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
-        const res = await fetch(proxyUrl);
-
-        if (!res.ok) throw new Error('proxy failed');
-
-        const htmlText = await res.text();
-        if (!htmlText || htmlText.length < 100) throw new Error('empty html');
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, 'text/html');
-        const messages = doc.querySelectorAll('.tgme_widget_message_wrap');
-
-        if (!messages.length) {
-            container.innerHTML = '<div class="loader-inner">لا يوجد منشورات عامة</div>';
-            return;
         }
 
-        const lastMsg = messages[messages.length - 1].outerHTML
-            .replace(/src="///g, 'src="https://')
-            .replace(/src="//g, 'src="https://t.me/')
-            .replace(/href="///g, 'href="https://')
-            .replace(/href="//g, 'href="https://t.me/');
+        function extractMessageId(item) {
+            const direct = String(item.MessageID || item.messageid || item.message_id || '').trim();
+            if (direct) return direct;
 
-        container.innerHTML = lastMsg;
-    } catch (e) {
-        container.innerHTML = '<div class="loader-inner">فشل في جلب المحتوى</div>';
-        console.error('Telegram fetch error:', username, e);
-    }
-}
+            try {
+                const link = normalizeLink(item.Link || '');
+                const parts = link.replace('https://t.me/', '').split('/');
+                if (parts.length > 1 && /^d+$/.test(parts[1])) return parts[1];
+            } catch {}
 
-function render() {
-    const wrapper = document.getElementById('wrapper');
-    wrapper.innerHTML = '';
-
-    const slice = allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-
-    slice.forEach((item, index) => {
-        let username = '';
-        try {
-            username = item.Link.split('t.me/')[1].split('/')[0].split('?')[0];
-        } catch {
-            return;
+            return '';
         }
 
-        const cardId = `post-${currentPage}-${index}`;
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <div class="card-header">
-                <span># ${item.Keyword || '-'}</span>
-                <span>${item.Subscribers || '-'}</span>
-            </div>
-            <div class="post-body" id="${cardId}">
-                <div class="loader-inner">جاري التحميل...</div>
-            </div>
-            <div style="padding:10px; border-top:1px solid #eee; text-align:center;">
-                <a href="${item.Link}" target="_blank" rel="noopener noreferrer" style="color:var(--tg-blue); text-decoration:none; font-size:12px; font-weight:bold;">فتح القناة 🚀</a>
-            </div>
-        `;
-        wrapper.appendChild(card);
-        fetchPostHTML(username, cardId);
-    });
+        async function init() {
+            const wrapper = document.getElementById('wrapper');
+            wrapper.innerHTML = '<div class="loader-inner">جاري تحميل القنوات...</div>';
 
-    document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1}`;
-    document.getElementById('prev').disabled = currentPage === 0;
-    document.getElementById('next').disabled = (currentPage + 1) * pageSize >= allData.length;
-}
+            try {
+                const res = await fetch(CSV_URL);
+                if (!res.ok) throw new Error('Failed to load CSV');
 
-function changePage(step) {
-    currentPage += step;
-    render();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+                const text = await res.text();
 
-init();
-</script>
+                Papa.parse(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        allData = (results.data || [])
+                            .filter(row => row && row.Link)
+                            .filter(row => !String(row.Link).includes('/+'));
+
+                        filteredData = [...allData];
+                        currentPage = 0;
+                        render();
+                    },
+                    error: () => {
+                        wrapper.innerHTML = '<div class="error-state">فشل في قراءة ملف CSV</div>';
+                    }
+                });
+            } catch (e) {
+                wrapper.innerHTML = '<div class="error-state">فشل في تحميل ملف القنوات من GitHub</div>';
+                console.error(e);
+            }
+        }
+
+        function createTelegramWidget(container, username, messageId) {
+            container.innerHTML = '';
+
+            const holder = document.createElement('div');
+            holder.style.width = '100%';
+
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-post', `${username}/${messageId}`);
+            script.setAttribute('data-width', '100%');
+            script.setAttribute('data-userpic', 'true');
+            script.setAttribute('data-dark', '0');
+
+            holder.appendChild(script);
+            container.appendChild(holder);
+        }
+
+        function renderCard(item, indexOnPage) {
+            const username = extractUsername(item.Link || '');
+            const messageId = extractMessageId(item);
+            const subscribers = item.Subscribers || item.subscribers || '-';
+            const keyword = item.Keyword || item.keyword || 'بدون عنوان';
+            const channelUrl = normalizeLink(item.Link || '');
+            const cardId = `post-${currentPage}-${indexOnPage}`;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span title="${keyword}"># ${keyword}</span>
+                    <span title="${subscribers}">👥 ${subscribers}</span>
+                </div>
+
+                <div class="post-body" id="${cardId}">
+                    <div class="loader-inner">جاري تجهيز المعاينة...</div>
+                </div>
+
+                <div class="card-footer">
+                    <span class="meta-badge">${username || 'رابط غير صالح'}</span>
+                    <a href="${channelUrl}" target="_blank" rel="noopener noreferrer">فتح القناة 🚀</a>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const container = document.getElementById(cardId);
+                if (!container) return;
+
+                if (!username) {
+                    container.innerHTML = '<div class="error-state">رابط القناة غير صالح</div>';
+                    return;
+                }
+
+                if (!messageId) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            لا يمكن عرض المنشور داخل البطاقة لأن عمود MessageID غير موجود في ملف CSV.<br>
+                            أضف رقم منشور عام من القناة ليظهر تلقائيًا هنا.
+                        </div>
+                    `;
+                    return;
+                }
+
+                createTelegramWidget(container, username, messageId);
+            }, 0);
+
+            return card;
+        }
+
+        function render() {
+            const wrapper = document.getElementById('wrapper');
+            wrapper.innerHTML = '';
+
+            if (!filteredData.length) {
+                wrapper.innerHTML = '<div class="empty-state">لا توجد نتائج مطابقة</div>';
+                updatePagination();
+                return;
+            }
+
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            const slice = filteredData.slice(start, end);
+
+            slice.forEach((item, index) => {
+                wrapper.appendChild(renderCard(item, index));
+            });
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+            document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1} من ${totalPages}`;
+            document.getElementById('prev').disabled = currentPage === 0;
+            document.getElementById('next').disabled = currentPage >= totalPages - 1;
+        }
+
+        function changePage(step) {
+            const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+            currentPage += step;
+
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage > totalPages - 1) currentPage = totalPages - 1;
+
+            render();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function applySearch(value) {
+            const q = value.trim().toLowerCase();
+
+            filteredData = allData.filter(item => {
+                const keyword = String(item.Keyword || item.keyword || '').toLowerCase();
+                const subs = String(item.Subscribers || item.subscribers || '').toLowerCase();
+                const link = String(item.Link || '').toLowerCase();
+                return keyword.includes(q) || subs.includes(q) || link.includes(q);
+            });
+
+            currentPage = 0;
+            render();
+        }
+
+        document.getElementById('prev').addEventListener('click', () => changePage(-1));
+        document.getElementById('next').addEventListener('click', () => changePage(1));
+        document.getElementById('search').addEventListener('input', (e) => applySearch(e.target.value));
+
+        init();
+    </script>
+</body>
+</html>
