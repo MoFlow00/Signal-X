@@ -146,6 +146,55 @@ async function initRadar(){
   }
 }
 
+  // وظيفة ذكية لاكتشاف البوستات المحذوفة أو غير الموجودة
+function checkWidgetHealth(container, cardId) {
+    setTimeout(() => {
+        const iframe = container.querySelector('iframe');
+        if (iframe) {
+            // تليجرام يضع ارتفاعاً صغيراً جداً (عادة أقل من 80px) إذا كان البوست محذوفاً أو القناة خاصة
+            if (iframe.offsetHeight < 80) {
+                console.log(`Auto-hiding broken/private post: ${cardId}`);
+                const card = document.getElementById(cardId);
+                if (card) card.style.display = 'none';
+            }
+        }
+    }, 4000); // ننتظر 4 ثوانٍ لضمان اكتمال تحميل الـ Widget
+}
+
+// تعديل وظيفة lazyLoadWidgets لتشمل الفحص
+function lazyLoadWidgets(){
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(!entry.isIntersecting) return;
+      const el = entry.target;
+      if(el.dataset.loaded) return;
+      el.dataset.loaded = true;
+      
+      const cardId = el.closest('.post-card').id;
+      el.innerHTML = '';
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-post', `${el.dataset.username}/${el.dataset.msgid}`);
+      script.setAttribute('data-width','100%');
+      script.setAttribute('data-userpic','false');
+      
+      if(document.documentElement.getAttribute('data-theme')==='dark') {
+          script.setAttribute('data-dark','1');
+      }
+      
+      el.appendChild(script);
+      
+      // تشغيل فحص الصحة بعد التحميل
+      checkWidgetHealth(el, cardId);
+      
+      observer.unobserve(el);
+    });
+  },{rootMargin:'200px'});
+  
+  document.querySelectorAll('.telegram-widget-container').forEach(el=>observer.observe(el));
+}
+
 function renderPosts(){
   const grid = document.getElementById('radarGrid');
   grid.innerHTML = '';
