@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Telegram Radar Ultra</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root {
+  /* Dark Theme (Default) */
   --bg: #0d1117;
   --surface: #161b22;
   --surface2: #21262d;
@@ -28,14 +29,30 @@
   --radius-xl: 24px;
 }
 
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface2: #f0f2f5;
+  --surface3: #e1e4e8;
+  --blue: #0969da;
+  --blue-dim: #0550ae;
+  --blue-glow: rgba(9,105,218,0.1);
+  --text: #1f2328;
+  --text-muted: #57606a;
+  --text-dim: #6e7781;
+  --border: rgba(31,35,40,0.15);
+  --border-soft: rgba(31,35,40,0.08);
+}
+
 *{box-sizing:border-box;margin:0;padding:0;}
 
 body{
   background:var(--bg);
-  font-family:'IBM Plex Sans Arabic','Inter',sans-serif;
+  font-family:'Inter', sans-serif;
   color:var(--text);
   min-height:100vh;
   overflow-x:hidden;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* ── HEADER ── */
@@ -43,7 +60,7 @@ header{
   position:sticky;
   top:0;
   z-index:999;
-  background:rgba(13,17,23,.85);
+  background: var(--bg);
   backdrop-filter:blur(20px);
   -webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
@@ -104,7 +121,24 @@ header{
 .header-right{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:12px;
+}
+
+.theme-toggle {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  background: var(--surface3);
 }
 
 .status-dot{
@@ -124,16 +158,24 @@ header{
 .status-label{
   font-size:12px;
   color:var(--text-muted);
+  font-weight: 600;
 }
 
-/* ── SEARCH ── */
+/* ── SEARCH & SORT ── */
+.controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .search-wrapper{
   position:relative;
+  flex-grow: 1;
 }
 
 .search-icon{
   position:absolute;
-  right:18px;
+  left:18px;
   top:50%;
   transform:translateY(-50%);
   color:var(--text-dim);
@@ -144,7 +186,7 @@ header{
 
 #searchInput{
   width:100%;
-  padding:14px 50px 14px 20px;
+  padding:14px 20px 14px 50px;
   background:var(--surface2);
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
@@ -155,15 +197,23 @@ header{
   transition:all .25s;
 }
 
-#searchInput::placeholder{color:var(--text-dim);}
-
 #searchInput:focus{
   border-color:rgba(14,165,233,.5);
   background:var(--surface);
   box-shadow:0 0 0 3px var(--blue-glow);
 }
 
-#searchInput:focus + .search-icon{color:var(--blue);}
+.sort-select {
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
 
 /* ── CONTROLS BAR ── */
 .controls-bar{
@@ -190,34 +240,6 @@ header{
 }
 
 .stats-pill strong{color:var(--blue);font-weight:600;}
-
-.stats-pill .dot{
-  width:6px;height:6px;
-  border-radius:50%;
-  background:var(--border);
-}
-
-/* ── LOADING ── */
-#loading{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:20px;
-  padding:80px 20px;
-  color:var(--text-muted);
-  font-size:15px;
-}
-
-.spinner{
-  width:40px;height:40px;
-  border:2px solid var(--border);
-  border-top-color:var(--blue);
-  border-radius:50%;
-  animation:spin .7s linear infinite;
-}
-
-@keyframes spin{to{transform:rotate(360deg);}}
 
 /* ── GRID ── */
 .radar-grid{
@@ -247,7 +269,7 @@ header{
 .post-card:hover{
   transform:translateY(-3px);
   border-color:rgba(14,165,233,.3);
-  box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 0 1px rgba(14,165,233,.1);
+  box-shadow:0 8px 32px rgba(0,0,0,.15);
 }
 
 .post-header{
@@ -276,12 +298,6 @@ header{
   font-weight:600;
   padding:4px 10px;
   border-radius:100px;
-  letter-spacing:.2px;
-}
-
-.keyword-tag::before{
-  content:'#';
-  opacity:.7;
 }
 
 .channel-tag{
@@ -296,18 +312,12 @@ header{
   border-radius:100px;
 }
 
-.channel-tag::before{
-  content:'@';
-  opacity:.5;
-}
-
 .telegram-widget-container{
   min-height:160px;
   padding:12px;
   background:var(--surface);
 }
 
-/* skeleton for unloaded */
 .widget-skeleton{
   height:140px;
   background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);
@@ -346,13 +356,7 @@ header{
 
 .open-btn:hover{
   background:rgba(14,165,233,.2);
-  border-color:rgba(14,165,233,.5);
   transform:scale(1.03);
-}
-
-.open-btn svg{
-  width:14px;height:14px;
-  flex-shrink:0;
 }
 
 /* ── PAGINATION ── */
@@ -365,9 +369,6 @@ header{
 }
 
 .pg-btn{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
   background:var(--surface2);
   color:var(--text);
   border:1px solid var(--border);
@@ -375,68 +376,42 @@ header{
   border-radius:var(--radius-md);
   cursor:pointer;
   font-family:inherit;
-  font-size:14px;
-  font-weight:500;
   transition:all .2s;
 }
 
 .pg-btn:hover:not(:disabled){
   background:var(--surface3);
-  border-color:rgba(14,165,233,.4);
   color:var(--blue);
 }
 
-.pg-btn:disabled{
-  opacity:.35;
-  cursor:not-allowed;
-}
+.pg-btn:disabled{ opacity:.35; cursor:not-allowed; }
 
-.pg-info{
-  background:var(--surface);
-  border:1px solid var(--border);
-  padding:10px 20px;
-  border-radius:var(--radius-md);
-  font-size:14px;
-  color:var(--text-muted);
-  min-width:100px;
-  text-align:center;
-}
-
-.pg-info strong{color:var(--text);font-weight:600;}
-
-/* ── EMPTY STATE ── */
-.empty-state{
-  text-align:center;
-  padding:60px 20px;
+/* ── LOADING & EMPTY ── */
+#loading{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  padding:80px 20px;
   color:var(--text-muted);
 }
 
-.empty-icon{
-  font-size:48px;
-  margin-bottom:16px;
-  opacity:.5;
+.spinner{
+  width:40px;height:40px;
+  border:2px solid var(--border);
+  border-top-color:var(--blue);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
 }
 
-.empty-state h3{
-  font-size:18px;
-  font-weight:600;
-  color:var(--text);
-  margin-bottom:8px;
-}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-.empty-state p{font-size:14px;}
+.empty-state{ text-align:center; padding:60px 20px; color:var(--text-muted); }
 
-/* ── RESPONSIVE ── */
 @media(max-width:768px){
-  header{padding:0 16px;}
-  .header-top{flex-wrap:wrap;gap:10px;}
-  .controls-bar{padding:0 16px;}
-  .radar-grid{grid-template-columns:1fr;padding:0 16px 16px;}
-  .logo-text{font-size:17px;}
-}
-
-@media(max-width:480px){
-  .post-header{flex-direction:column;align-items:flex-start;gap:8px;}
+  .radar-grid{grid-template-columns:1fr;}
+  .controls-row { flex-direction: column; align-items: stretch; }
 }
 </style>
 </head>
@@ -451,19 +426,26 @@ header{
         <span class="logo-badge">ULTRA</span>
       </div>
       <div class="header-right">
+        <button class="theme-toggle" id="themeToggle" title="Toggle Light/Dark Mode">🌓</button>
         <div class="status-dot"></div>
-        <span class="status-label">مباشر</span>
+        <span class="status-label">LIVE</span>
       </div>
     </div>
 
-    <div class="search-wrapper">
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="ابحث بالكلمة المفتاحية أو اسم القناة…"
-        autocomplete="off"
-      />
-      <span class="search-icon">🔍</span>
+    <div class="controls-row">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by keyword or channel name..."
+          autocomplete="off"
+        />
+      </div>
+      <select id="sortSelect" class="sort-select">
+        <option value="random">Shuffle (Random)</option>
+        <option value="newest">Newest First</option>
+      </select>
     </div>
   </div>
 </header>
@@ -471,13 +453,13 @@ header{
 <div class="controls-bar">
   <div class="stats-pill" id="statsDisplay">
     <span class="dot"></span>
-    جاري التحميل…
+    Initializing...
   </div>
 </div>
 
 <div id="loading">
   <div class="spinner"></div>
-  <span>جاري تحميل البيانات…</span>
+  <span>Fetching data...</span>
 </div>
 
 <div id="radarGrid" class="radar-grid"></div>
@@ -489,10 +471,24 @@ const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper
 
 let allData = [];
 let filteredData = [];
+let currentSort = 'random';
 
 const MAX_CHANNELS = 5000;
 const POSTS_PER_PAGE = 50;
 let currentPage = 1;
+
+// --- Theme Logic ---
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+});
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
 
 async function initRadar() {
   try {
@@ -502,7 +498,7 @@ async function initRadar() {
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-        allData = results.data.filter(row =>
+        allData = results.data.filter(row => 
           row.LatestID && row.LatestID !== "None" && row.Link
         );
         filteredData = [...allData];
@@ -515,8 +511,8 @@ async function initRadar() {
     document.getElementById('loading').innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
-        <h3>فشل تحميل البيانات</h3>
-        <p>تحقق من الاتصال وأعد المحاولة</p>
+        <h3>Data Load Failed</h3>
+        <p>Please check your connection and refresh.</p>
       </div>`;
   }
 }
@@ -532,28 +528,35 @@ function renderPosts() {
     try {
       const username = item.Link.split('t.me/')[1].split('/')[0];
       const latestId = parseInt(item.LatestID);
+      // Take last 5 posts from each channel
       for (let i = 0; i < 5; i++) {
         const msgId = latestId - i;
         if (msgId <= 0) break;
-        allPosts.push({ username, msgId, keyword: item.Keyword || 'UNKNOWN' });
+        allPosts.push({ 
+            username, 
+            msgId, 
+            keyword: item.Keyword || 'General',
+            globalId: msgId // Using msgId as proxy for timestamp
+        });
       }
     } catch(e) {}
   });
 
-  allPosts.sort(() => Math.random() - 0.5);
+  // --- Sorting Logic ---
+  if (currentSort === 'random') {
+    allPosts.sort(() => Math.random() - 0.5);
+  } else {
+    // Newest First
+    allPosts.sort((a, b) => b.msgId - a.msgId);
+  }
 
   const start = (currentPage - 1) * POSTS_PER_PAGE;
   const end = start + POSTS_PER_PAGE;
   const currentPosts = allPosts.slice(start, end);
 
   if (currentPosts.length === 0) {
-    grid.innerHTML = `
-      <div class="empty-state" style="grid-column:1/-1">
-        <div class="empty-icon">🔭</div>
-        <h3>لا توجد نتائج</h3>
-        <p>جرب كلمة بحث مختلفة</p>
-      </div>`;
-    document.getElementById('statsDisplay').innerHTML = `<span class="dot"></span> 0 نتيجة`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h3>No results found</h3><p>Try a different keyword</p></div>`;
+    document.getElementById('statsDisplay').innerHTML = `0 results`;
     document.getElementById('paginationUI').innerHTML = '';
     return;
   }
@@ -561,37 +564,31 @@ function renderPosts() {
   currentPosts.forEach((post, idx) => {
     const card = document.createElement('div');
     card.className = 'post-card';
-    card.style.animationDelay = (idx * 18) + 'ms';
+    card.style.animationDelay = (idx * 15) + 'ms';
     card.innerHTML = `
       <div class="post-header">
         <div class="header-left">
-          <span class="keyword-tag">${escHtml(post.keyword)}</span>
+          <span class="keyword-tag">#${escHtml(post.keyword)}</span>
         </div>
-        <span class="channel-tag">${escHtml(post.username)}</span>
+        <span class="channel-tag">@${escHtml(post.username)}</span>
       </div>
-      <div class="telegram-widget-container"
-           data-username="${escHtml(post.username)}"
-           data-msgid="${post.msgId}">
+      <div class="telegram-widget-container" data-username="${escHtml(post.username)}" data-msgid="${post.msgId}">
         <div class="widget-skeleton"></div>
       </div>
       <div class="post-footer">
-        <a class="open-btn"
-           href="https://t.me/${escHtml(post.username)}/${post.msgId}"
-           target="_blank">
-          فتح البوست
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <a class="open-btn" href="https://t.me/${escHtml(post.username)}/${post.msgId}" target="_blank">
+          View Post
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
       </div>
     `;
     grid.appendChild(card);
   });
 
-  const total = allPosts.length;
-  const pageCount = Math.ceil(total / POSTS_PER_PAGE);
-  document.getElementById('statsDisplay').innerHTML =
-    `<span class="dot"></span> صفحة <strong>${currentPage}</strong> من <strong>${pageCount}</strong> &nbsp;·&nbsp; <strong>${currentPosts.length}</strong> بوست`;
+  const totalPages = Math.ceil(allPosts.length / POSTS_PER_PAGE);
+  document.getElementById('statsDisplay').innerHTML = `Page <strong>${currentPage}</strong> of <strong>${totalPages}</strong> &nbsp;·&nbsp; Total <strong>${allPosts.length}</strong> posts`;
 
-  renderPagination(total);
+  renderPagination(allPosts.length);
   lazyLoadWidgets();
 }
 
@@ -600,69 +597,60 @@ function escHtml(str) {
 }
 
 function lazyLoadWidgets() {
-  const widgets = document.querySelectorAll('.telegram-widget-container');
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       const el = entry.target;
       if (el.dataset.loaded) return;
       el.dataset.loaded = true;
-
-      const skeleton = el.querySelector('.widget-skeleton');
-      if (skeleton) skeleton.remove();
-
-      const username = el.dataset.username;
-      const msgid = el.dataset.msgid;
+      el.innerHTML = '';
+      
       const script = document.createElement('script');
       script.async = true;
       script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.setAttribute('data-telegram-post', `${username}/${msgid}`);
+      script.setAttribute('data-telegram-post', `${el.dataset.username}/${el.dataset.msgid}`);
       script.setAttribute('data-width', '100%');
       script.setAttribute('data-userpic', 'false');
+      // Adjust widget theme based on current site theme
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      if(currentTheme === 'dark') script.setAttribute('data-dark', '1');
+      
       el.appendChild(script);
       observer.unobserve(el);
     });
   }, { rootMargin: '400px' });
 
-  widgets.forEach(el => observer.observe(el));
+  document.querySelectorAll('.telegram-widget-container').forEach(el => observer.observe(el));
 }
 
 function handleSearch() {
   currentPage = 1;
   const term = document.getElementById('searchInput').value.toLowerCase();
-  filteredData = allData.filter(item =>
-    item.Keyword?.toLowerCase().includes(term) ||
+  filteredData = allData.filter(item => 
+    item.Keyword?.toLowerCase().includes(term) || 
     item.Link?.toLowerCase().includes(term)
   );
   renderPosts();
 }
 
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+  currentSort = e.target.value;
+  currentPage = 1;
+  renderPosts();
+});
+
 function renderPagination(totalPosts) {
   const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
   const pagination = document.getElementById('paginationUI');
   pagination.innerHTML = `
-    <button class="pg-btn" onclick="prevPage()" ${currentPage <= 1 ? 'disabled' : ''}>
-      ← السابق
-    </button>
-    <div class="pg-info">
-      <strong>${currentPage}</strong> / ${totalPages}
-    </div>
-    <button class="pg-btn" onclick="nextPage(${totalPages})" ${currentPage >= totalPages ? 'disabled' : ''}>
-      التالي →
-    </button>
+    <button class="pg-btn" onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>← Previous</button>
+    <span style="font-size:14px; color:var(--text-muted)">${currentPage} / ${totalPages}</span>
+    <button class="pg-btn" onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>Next →</button>
   `;
 }
 
-function nextPage(totalPages) {
-  if (currentPage >= totalPages) return;
-  currentPage++;
-  renderPosts();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function prevPage() {
-  if (currentPage <= 1) return;
-  currentPage--;
+function changePage(step) {
+  currentPage += step;
   renderPosts();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
