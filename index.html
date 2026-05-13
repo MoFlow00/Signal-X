@@ -3,90 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رادار القنوات - Mirror Mode</title>
+    <title>Radar Timeline 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        :root { --main-blue: #0088cc; --bg: #f4f7f9; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 10px; }
-        .header { text-align: center; background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        :root { --tg-blue: #0088cc; }
+        body { font-family: sans-serif; background: #e7ebf0; margin: 0; padding: 15px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
-        .card { background: white; border-radius: 15px; overflow: hidden; height: 650px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .card-header { padding: 12px; background: var(--main-blue); color: white; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
-        .iframe-wrapper { flex: 1; position: relative; background: #fff; }
-        /* السر هنا: استخدام خدمة بتسمح بالعرض بدون حظر X-Frame */
-        iframe { width: 100%; height: 100%; border: none; }
+        .card { background: #fff; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 15px; }
+        .card-header { font-weight: bold; color: var(--tg-blue); margin-bottom: 15px; border-bottom: 2px solid #f4f4f4; padding-bottom: 10px; }
+        .timeline { max-height: 500px; overflow-y: auto; }
         .pagination { text-align: center; margin: 20px; }
-        button { padding: 10px 25px; border-radius: 20px; border: none; background: var(--main-blue); color: white; cursor: pointer; font-weight: bold; }
+        button { padding: 10px 20px; border-radius: 20px; border: none; background: var(--tg-blue); color: #fff; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>📡 رادار التايم لاين (Mirror Mode)</h1>
-        <input type="text" id="search" placeholder="بحث في القنوات..." style="padding:12px; width:85%; border-radius:25px; border:1px solid #ddd; outline:none; text-align:center;">
-    </div>
-
-    <div class="pagination">
-        <button onclick="changePage(-1)">السابق</button>
-        <span id="pageInfo" style="margin: 0 15px; font-weight: bold;"></span>
-        <button onclick="changePage(1)">التالي</button>
-    </div>
-
     <div id="wrapper" class="grid"></div>
 
     <script>
-        const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
-        let allData = [];
-        let currentPage = 0;
-        const pageSize = 12;
+        const RAW_CSV = "https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv";
 
-        async function init() {
-            const res = await fetch(CSV_URL);
+        async function load() {
+            const res = await fetch(RAW_CSV);
             const text = await res.text();
             Papa.parse(text, {
                 header: true,
-                complete: (results) => {
-                    allData = results.data.filter(d => d.Link && !d.Link.includes('+'));
-                    render();
+                complete: (r) => {
+                    const container = document.getElementById('wrapper');
+                    // بنعرض عينة عشان المتصفح ميهنجش
+                    r.data.slice(0, 12).forEach(item => {
+                        if (!item.LatestID || item.LatestID === "" || item.LatestID === "None") return;
+
+                        const username = item.Link.split('t.me/')[1].split('/')[0];
+                        const lastId = parseInt(item.LatestID);
+
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <div class="card-header"># ${item.Keyword} (@${username})</div>
+                            <div class="timeline" id="tl-${username}"></div>
+                        `;
+                        container.appendChild(card);
+
+                        // جلب آخر 5 بوستات (Timeline)
+                        const tl = document.getElementById(`tl-${username}`);
+                        for(let i = 0; i < 5; i++) {
+                            const currentId = lastId - i;
+                            if(currentId <= 0) break;
+                            
+                            const widget = document.createElement('script');
+                            widget.async = true;
+                            widget.src = "https://telegram.org/js/telegram-widget.js?22";
+                            widget.setAttribute("data-telegram-post", `${username}/${currentId}`);
+                            widget.setAttribute("data-width", "100%");
+                            tl.appendChild(widget);
+                        }
+                    });
                 }
             });
         }
-
-        function render() {
-            const wrapper = document.getElementById('wrapper');
-            wrapper.innerHTML = '';
-            const slice = allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-
-            slice.forEach(item => {
-                const username = item.Link.split('t.me/')[1].split('/')[0].split('?')[0];
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                // بنستخدم محرك "Smart Preview" بيعرض محتوى القناة من غير حظر تليجرام
-                // جربنا كذا وسيط، وده حالياً الأكثر استقراراً للعرض كـ Timeline
-                const mirrorUrl = `https://telemetr.io/en/channels/${username}/posts`;
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span># ${item.Keyword}</span>
-                        <span>${item.Subscribers}</span>
-                    </div>
-                    <div class="iframe-wrapper">
-                        <iframe src="${mirrorUrl}" loading="lazy"></iframe>
-                    </div>
-                    <div style="padding:10px; text-align:center; border-top:1px solid #eee;">
-                        <a href="${item.Link}" target="_blank" style="color:var(--main-blue); text-decoration:none; font-weight:bold; font-size:12px;">فتح في تطبيق تليجرام 🚀</a>
-                    </div>
-                `;
-                wrapper.appendChild(card);
-            });
-
-            document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1}`;
-        }
-
-        function changePage(step) { currentPage += step; render(); window.scrollTo(0,0); }
-        init();
+        load();
     </script>
 </body>
 </html>
