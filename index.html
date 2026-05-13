@@ -1,119 +1,107 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رادار تليجرام - Live View</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://telegram.org/css/widget-frame.css?61">
-    <style>
-        :root { --tg-blue: #0088cc; }
-        body { font-family: sans-serif; background: #e7ebf0; margin: 0; padding: 10px; }
-        .header { text-align: center; background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
-        .card { background: #fff; border-radius: 15px; overflow: hidden; height: 550px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .card-header { padding: 10px; background: var(--tg-blue); color: #fff; display: flex; justify-content: space-between; font-size: 12px; }
-        .post-body { flex: 1; overflow-y: auto; padding: 10px; position: relative; }
-        .loader-inner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #888; }
-        .pagination { text-align: center; margin: 20px; }
-        button { padding: 10px 25px; border-radius: 20px; border: none; background: var(--tg-blue); color: #fff; cursor: pointer; font-weight: bold; }
-        button:disabled { background: #ccc; }
-    </style>
-</head>
-<body>
+<script>
+const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
+let allData = [];
+let currentPage = 0;
+const pageSize = 12;
 
-    <div class="header">
-        <h1>📡 رادار تليجرام (البث المباشر)</h1>
-        <input type="text" id="search" placeholder="ابحث في القنوات..." style="padding:12px; width:80%; border-radius:25px; border:1px solid #ddd; outline:none;">
-    </div>
+async function init() {
+    try {
+        const res = await fetch(CSV_URL);
+        if (!res.ok) throw new Error('CSV load failed');
+        const text = await res.text();
 
-    <div class="pagination">
-        <button id="prev" onclick="changePage(-1)">السابق</button>
-        <span id="pageInfo" style="margin: 0 15px; font-weight: bold;"></span>
-        <button id="next" onclick="changePage(1)">التالي</button>
-    </div>
-
-    <div id="wrapper" class="grid"></div>
-
-    <script>
-        const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
-        let allData = [];
-        let currentPage = 0;
-        const pageSize = 12;
-
-        async function init() {
-            const res = await fetch(CSV_URL);
-            const text = await res.text();
-            Papa.parse(text, {
-                header: true,
-                complete: (results) => {
-                    allData = results.data.filter(d => d.Link && !d.Link.includes('+'));
-                    render();
-                }
-            });
-        }
-
-        async function fetchPostHTML(username, containerId) {
-            const container = document.getElementById(containerId);
-            try {
-                // استخدام AllOrigins للالتفاف على حظر الـ iframe (CORS Proxy)
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://t.me/s/' + username)}`;
-                const res = await fetch(proxyUrl);
-                const data = await res.json();
-                
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
-                const messages = doc.querySelectorAll('.tgme_widget_message_wrap');
-                
-                if (messages.length > 0) {
-                    const lastMsg = messages[messages.length - 1];
-                    // تنظيف الروابط لتصحيح عرض الصور
-                    let html = lastMsg.outerHTML;
-                    html = html.replace(/href="\//g, 'href="https://t.me/');
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = '<div class="loader-inner">لا يوجد منشورات عامة</div>';
-                }
-            } catch (e) {
-                container.innerHTML = '<div class="loader-inner">فشل في جلب المحتوى</div>';
+        Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                allData = results.data.filter(d => d.Link && d.Link.includes('t.me/') && !d.Link.includes('+'));
+                render();
             }
+        });
+    } catch (e) {
+        document.getElementById('wrapper').innerHTML = '<div class="loader-inner">فشل في تحميل ملف القنوات</div>';
+    }
+}
+
+async function fetchPostHTML(username, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        const targetUrl = 'https://t.me/s/' + username;
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+        const res = await fetch(proxyUrl);
+
+        if (!res.ok) throw new Error('proxy failed');
+
+        const htmlText = await res.text();
+        if (!htmlText || htmlText.length < 100) throw new Error('empty html');
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        const messages = doc.querySelectorAll('.tgme_widget_message_wrap');
+
+        if (!messages.length) {
+            container.innerHTML = '<div class="loader-inner">لا يوجد منشورات عامة</div>';
+            return;
         }
 
-        function render() {
-            const wrapper = document.getElementById('wrapper');
-            wrapper.innerHTML = '';
-            const slice = allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+        const lastMsg = messages[messages.length - 1].outerHTML
+            .replace(/src="///g, 'src="https://')
+            .replace(/src="//g, 'src="https://t.me/')
+            .replace(/href="///g, 'href="https://')
+            .replace(/href="//g, 'href="https://t.me/');
 
-            slice.forEach((item, index) => {
-                const username = item.Link.split('t.me/')[1].split('/')[0].split('?')[0];
-                const cardId = `post-${index}`;
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span># ${item.Keyword}</span>
-                        <span>${item.Subscribers}</span>
-                    </div>
-                    <div class="post-body" id="${cardId}">
-                        <div class="loader-inner">جاري التحميل...</div>
-                    </div>
-                    <div style="padding:10px; border-top:1px solid #eee; text-align:center;">
-                        <a href="${item.Link}" target="_blank" style="color:var(--tg-blue); text-decoration:none; font-size:12px; font-weight:bold;">فتح القناة 🚀</a>
-                    </div>
-                `;
-                wrapper.appendChild(card);
-                // جلب الـ HTML لايف لكل كارت
-                fetchPostHTML(username, cardId);
-            });
+        container.innerHTML = lastMsg;
+    } catch (e) {
+        container.innerHTML = '<div class="loader-inner">فشل في جلب المحتوى</div>';
+        console.error('Telegram fetch error:', username, e);
+    }
+}
 
-            document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1}`;
-            document.getElementById('prev').disabled = currentPage === 0;
-            document.getElementById('next').disabled = (currentPage + 1) * pageSize >= allData.length;
+function render() {
+    const wrapper = document.getElementById('wrapper');
+    wrapper.innerHTML = '';
+
+    const slice = allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+    slice.forEach((item, index) => {
+        let username = '';
+        try {
+            username = item.Link.split('t.me/')[1].split('/')[0].split('?')[0];
+        } catch {
+            return;
         }
 
-        function changePage(step) { currentPage += step; render(); window.scrollTo(0,0); }
-        init();
-    </script>
-</body>
-</html>
+        const cardId = `post-${currentPage}-${index}`;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <div class="card-header">
+                <span># ${item.Keyword || '-'}</span>
+                <span>${item.Subscribers || '-'}</span>
+            </div>
+            <div class="post-body" id="${cardId}">
+                <div class="loader-inner">جاري التحميل...</div>
+            </div>
+            <div style="padding:10px; border-top:1px solid #eee; text-align:center;">
+                <a href="${item.Link}" target="_blank" rel="noopener noreferrer" style="color:var(--tg-blue); text-decoration:none; font-size:12px; font-weight:bold;">فتح القناة 🚀</a>
+            </div>
+        `;
+        wrapper.appendChild(card);
+        fetchPostHTML(username, cardId);
+    });
+
+    document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1}`;
+    document.getElementById('prev').disabled = currentPage === 0;
+    document.getElementById('next').disabled = (currentPage + 1) * pageSize >= allData.length;
+}
+
+function changePage(step) {
+    currentPage += step;
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+init();
+</script>
