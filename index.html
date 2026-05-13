@@ -1,247 +1,408 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar Dashboard v2.0 | إمبراطورية الرادار</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Telegram Radar Ultra</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-color: #f0f4f8;
-            --card-bg: #ffffff;
-            --primary-blue: #0088cc;
-            --text-dark: #2c3e50;
-            --text-muted: #7f8c8d;
-            --accent-color: #3498db;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --blue: #0088cc;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg-color);
             margin: 0;
-            color: var(--text-dark);
-            overflow-x: hidden;
+            background: var(--bg);
+            font-family: Inter, sans-serif;
+            color: var(--text);
         }
 
-        /* Navbar & Header */
         header {
-            background: linear-gradient(135deg, var(--primary-blue), #005f92);
-            padding: 30px 20px;
-            color: white;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 999;
+            background: linear-gradient(135deg, #0088cc, #005f92);
+            padding: 24px 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,.15);
         }
 
-        .header-content h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 1px; }
-        .search-container { margin-top: 20px; position: relative; max-width: 600px; margin-left: auto; margin-right: auto; }
-        
+        .header-inner {
+            max-width: 1500px;
+            margin: auto;
+        }
+
+        h1 {
+            margin: 0;
+            color: white;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .search-box {
+            margin-top: 18px;
+        }
+
         #searchInput {
             width: 100%;
-            padding: 15px 25px;
-            border-radius: 50px;
+            padding: 16px 20px;
+            border-radius: 999px;
             border: none;
             outline: none;
             font-size: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
         }
 
-        /* Control Bar (Stats & Pagination) */
         .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 20px auto;
             padding: 0 20px;
         }
 
-        .stats { font-weight: 600; color: var(--text-muted); }
+        .stats {
+            font-weight: 700;
+            color: var(--muted);
+        }
 
-        /* Grid System */
         .radar-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 20px;
             padding: 20px;
-            max-width: 1600px;
-            margin: 0 auto;
+            max-width: 1800px;
+            margin: auto;
         }
 
-        /* Channel Card Design */
-        .card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            height: 800px; /* طول الكارت عشان التقليب */
-            transition: transform 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.05);
+        .post-card {
+            background: var(--card);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,.06);
+            transition: .25s;
         }
 
-        .card:hover { transform: translateY(-5px); }
+        .post-card:hover {
+            transform: translateY(-4px);
+        }
 
-        .card-header {
-            padding: 15px 20px;
-            background: #fff;
-            border-bottom: 1px solid #edf2f7;
-            border-radius: 20px 20px 0 0;
+        .post-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .card-header .kw { color: var(--primary-blue); font-weight: 700; font-size: 14px; text-transform: uppercase; }
-        .card-header .user { color: var(--text-muted); font-size: 12px; }
-
-        /* Timeline Area */
-        .timeline {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            background-color: #fdfdfd;
-        }
-
-        /* Custom Scrollbar */
-        .timeline::-webkit-scrollbar { width: 6px; }
-        .timeline::-webkit-scrollbar-track { background: #f1f1f1; }
-        .timeline::-webkit-scrollbar-thumb { background: #d1d8e0; border-radius: 10px; }
-        .timeline::-webkit-scrollbar-thumb:hover { background: var(--primary-blue); }
-
-        .card-footer {
-            padding: 12px;
-            text-align: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
             background: #f8fafc;
-            border-radius: 0 0 20px 20px;
         }
 
-        .btn-open {
-            color: var(--primary-blue);
-            text-decoration: none;
-            font-weight: 600;
+        .keyword {
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        .channel {
             font-size: 13px;
+            color: var(--muted);
         }
 
-        /* Loader */
-        .loader-container { text-align: center; padding: 50px; font-size: 20px; color: var(--primary-blue); }
+        .telegram-widget-container {
+            min-height: 180px;
+            padding: 10px;
+        }
 
-        @media (max-width: 450px) {
-            .radar-grid { grid-template-columns: 1fr; padding: 10px; }
-            .card { height: 600px; }
+        .post-footer {
+            padding: 14px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        .post-footer a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 60px;
+            font-size: 20px;
+            color: var(--blue);
+        }
+
+        @media(max-width:600px) {
+
+            .radar-grid {
+                grid-template-columns: 1fr;
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<header>
-    <div class="header-content">
-        <h1>📡 رادار الإمبراطورية الذكي</h1>
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="ابحث بالكلمة المفتاحية (Keyword) أو اسم القناة..." onkeyup="handleSearch()">
+    <header>
+        <div class="header-inner">
+
+            <h1>📡 Telegram Radar Ultra</h1>
+
+            <div class="search-box">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="ابحث بالكلمة المفتاحية أو اسم القناة"
+                />
+            </div>
+
+        </div>
+    </header>
+
+    <div class="controls">
+        <div class="stats" id="statsDisplay">
+            جاري التحميل...
         </div>
     </div>
-</header>
 
-<div class="controls">
-    <div class="stats" id="statsDisplay">جاري فحص القنوات...</div>
-    <div id="paginationUI">
-        </div>
-</div>
+    <div id="loading" class="loader">
+        جاري تحميل البوستات...
+    </div>
 
-<div id="loading" class="loader-container">جاري سحب التايم لاين المباشر...</div>
-<div id="radarGrid" class="radar-grid"></div>
+    <div id="radarGrid" class="radar-grid"></div>
 
-<script>
-    const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
-    let allData = [];
-    let filteredData = [];
+    <script>
 
-    // دالة بدء التحميل
-    async function initRadar() {
-        try {
-            const response = await fetch(CSV_URL);
-            const csvText = await response.text();
-            Papa.parse(csvText, {
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    allData = results.data.filter(row => row.LatestID && row.LatestID !== "None");
-                    filteredData = [...allData];
-                    document.getElementById('loading').style.display = 'none';
-                    render();
-                }
-            });
-        } catch (error) {
-            console.error("CSV Load Error:", error);
-            document.getElementById('loading').innerText = "خطأ في الاتصال بالبيانات!";
-        }
-    }
+        const CSV_URL =
+            'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
 
-    // دالة عرض الكروت
-    function render() {
-        const grid = document.getElementById('radarGrid');
-        grid.innerHTML = '';
-        
-        // عرض أول 20 قناة (يمكنك زيادة العدد لكن كن حذراً من ثقل الصفحة)
-        const displayList = filteredData.slice(0, 20);
-        document.getElementById('statsDisplay').innerText = `يعرض الآن: ${displayList.length} قناة من إجمالي ${filteredData.length}`;
+        let allData = [];
+        let filteredData = [];
 
-        displayList.forEach((item, index) => {
-            const username = item.Link.split('t.me/')[1].split('/')[0];
-            const latestId = parseInt(item.LatestID);
-            
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="card-header">
-                    <span class="kw"># ${item.Keyword}</span>
-                    <span class="user">@${username}</span>
-                </div>
-                <div class="timeline" id="tl-${index}">
-                    </div>
-                <div class="card-footer">
-                    <a href="${item.Link}" target="_blank" class="btn-open">فتح القناة بالكامل 🚀</a>
-                </div>
-            `;
-            grid.appendChild(card);
+        const POSTS_PER_CHANNEL = 8;
+        const CHANNEL_LIMIT = 60;
 
-            // حقن الـ 50 بوست (أو اقل لو القناة جديدة)
-            const timeline = document.getElementById(`tl-${index}`);
-            
-            // تحذير: تحميل 50 ويدجت فورا قد يبطئ المتصفح، سنستخدم تقنية الحلقة
-            for (let i = 0; i < 50; i++) {
-                const currentMsgId = latestId - i;
-                if (currentMsgId <= 0) break;
+        async function initRadar() {
 
-                const script = document.createElement('script');
-                script.async = true;
-                script.src = "https://telegram.org/js/telegram-widget.js?22";
-                script.setAttribute("data-telegram-post", `${username}/${currentMsgId}`);
-                script.setAttribute("data-width", "100%");
-                script.setAttribute("data-userpic", "false"); // توفير مساحة
-                timeline.appendChild(script);
+            try {
+
+                const response = await fetch(CSV_URL);
+
+                const csvText = await response.text();
+
+                Papa.parse(csvText, {
+
+                    header: true,
+                    skipEmptyLines: true,
+
+                    complete: function(results) {
+
+                        allData = results.data.filter(row =>
+                            row.LatestID &&
+                            row.LatestID !== "None" &&
+                            row.Link
+                        );
+
+                        filteredData = [...allData];
+
+                        document.getElementById('loading').style.display = 'none';
+
+                        renderPosts();
+                    }
+                });
+
+            } catch (err) {
+
+                console.error(err);
+
+                document.getElementById('loading').innerHTML =
+                    'فشل تحميل البيانات';
             }
-        });
-    }
+        }
 
-    // نظام البحث الذكي
-    function handleSearch() {
-        const term = document.getElementById('searchInput').value.toLowerCase();
-        filteredData = allData.filter(item => 
-            (item.Keyword && item.Keyword.toLowerCase().includes(term)) || 
-            (item.Link && item.Link.toLowerCase().includes(term))
-        );
-        render();
-    }
+        function renderPosts() {
 
-    // تشغيل
-    initRadar();
-</script>
+            const grid = document.getElementById('radarGrid');
+
+            grid.innerHTML = '';
+
+            const displayChannels =
+                filteredData.slice(0, CHANNEL_LIMIT);
+
+            let totalPosts = 0;
+
+            displayChannels.forEach(item => {
+
+                try {
+
+                    const username =
+                        item.Link.split('t.me/')[1].split('/')[0];
+
+                    const latestId =
+                        parseInt(item.LatestID);
+
+                    for (let i = 0; i < POSTS_PER_CHANNEL; i++) {
+
+                        const msgId = latestId - i;
+
+                        if (msgId <= 0) break;
+
+                        totalPosts++;
+
+                        const card = document.createElement('div');
+
+                        card.className = 'post-card';
+
+                        card.innerHTML = `
+
+                            <div class="post-header">
+
+                                <div class="keyword">
+                                    # ${item.Keyword || 'UNKNOWN'}
+                                </div>
+
+                                <div class="channel">
+                                    @${username}
+                                </div>
+
+                            </div>
+
+                            <div
+                                class="telegram-widget-container"
+                                data-username="${username}"
+                                data-msgid="${msgId}">
+                            </div>
+
+                            <div class="post-footer">
+
+                                <a
+                                    href="https://t.me/${username}/${msgId}"
+                                    target="_blank">
+
+                                    فتح البوست 🚀
+
+                                </a>
+
+                            </div>
+                        `;
+
+                        grid.appendChild(card);
+                    }
+
+                } catch(e) {
+
+                    console.log('channel error', e);
+                }
+
+            });
+
+            document.getElementById('statsDisplay').innerText =
+                `يعرض ${totalPosts} بوست من ${displayChannels.length} قناة`;
+
+            lazyLoadWidgets();
+        }
+
+        function lazyLoadWidgets() {
+
+            const widgets =
+                document.querySelectorAll('.telegram-widget-container');
+
+            const observer =
+                new IntersectionObserver((entries) => {
+
+                    entries.forEach(entry => {
+
+                        if (!entry.isIntersecting) return;
+
+                        const el = entry.target;
+
+                        if (el.dataset.loaded) return;
+
+                        el.dataset.loaded = true;
+
+                        const username =
+                            el.dataset.username;
+
+                        const msgid =
+                            el.dataset.msgid;
+
+                        const script =
+                            document.createElement('script');
+
+                        script.async = true;
+
+                        script.src =
+                            'https://telegram.org/js/telegram-widget.js?22';
+
+                        script.setAttribute(
+                            'data-telegram-post',
+                            `${username}/${msgid}`
+                        );
+
+                        script.setAttribute(
+                            'data-width',
+                            '100%'
+                        );
+
+                        script.setAttribute(
+                            'data-userpic',
+                            'false'
+                        );
+
+                        el.appendChild(script);
+
+                        observer.unobserve(el);
+                    });
+
+                }, {
+                    rootMargin: '400px'
+                });
+
+            widgets.forEach(el => observer.observe(el));
+        }
+
+        function handleSearch() {
+
+            const term =
+                document.getElementById('searchInput')
+                .value
+                .toLowerCase();
+
+            filteredData = allData.filter(item => {
+
+                return (
+                    item.Keyword?.toLowerCase().includes(term) ||
+                    item.Link?.toLowerCase().includes(term)
+                );
+            });
+
+            renderPosts();
+        }
+
+        document
+            .getElementById('searchInput')
+            .addEventListener('input', handleSearch);
+
+        initRadar();
+
+    </script>
+
 </body>
 </html>
+```
