@@ -143,6 +143,33 @@
             color: var(--blue);
         }
 
+        #paginationUI {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+        }
+
+        #paginationUI button {
+            border: none;
+            background: #0088cc;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        #paginationUI button:hover {
+            opacity: .9;
+        }
+
+        #paginationUI .page-number {
+            font-weight: 700;
+            color: #334155;
+        }
+
         @media(max-width:600px) {
 
             .radar-grid {
@@ -187,6 +214,8 @@
 
     <div id="radarGrid" class="radar-grid"></div>
 
+    <div id="paginationUI" class="pagination-controls"></div>
+
     <script>
 
         const CSV_URL =
@@ -195,8 +224,14 @@
         let allData = [];
         let filteredData = [];
 
-        const POSTS_PER_CHANNEL = 8;
-        const CHANNEL_LIMIT = 60;
+        // ===========================
+        // SETTINGS
+        // ===========================
+
+        const MAX_CHANNELS = 5000;
+        const POSTS_PER_PAGE = 50;
+
+        let currentPage = 1;
 
         async function initRadar() {
 
@@ -236,18 +271,23 @@
             }
         }
 
+        // ===========================
+        // RENDER POSTS
+        // ===========================
+
         function renderPosts() {
 
             const grid = document.getElementById('radarGrid');
 
             grid.innerHTML = '';
 
-            const displayChannels =
-                filteredData.slice(0, CHANNEL_LIMIT);
+            // جمع كل البوستات
+            let allPosts = [];
 
-            let totalPosts = 0;
+            const channels =
+                filteredData.slice(0, MAX_CHANNELS);
 
-            displayChannels.forEach(item => {
+            channels.forEach(item => {
 
                 try {
 
@@ -257,63 +297,86 @@
                     const latestId =
                         parseInt(item.LatestID);
 
-                    for (let i = 0; i < POSTS_PER_CHANNEL; i++) {
+                    // عدد البوستات من كل قناة
+                    for (let i = 0; i < 5; i++) {
 
                         const msgId = latestId - i;
 
                         if (msgId <= 0) break;
 
-                        totalPosts++;
-
-                        const card = document.createElement('div');
-
-                        card.className = 'post-card';
-
-                        card.innerHTML = `
-
-                            <div class="post-header">
-
-                                <div class="keyword">
-                                    # ${item.Keyword || 'UNKNOWN'}
-                                </div>
-
-                                <div class="channel">
-                                    @${username}
-                                </div>
-
-                            </div>
-
-                            <div
-                                class="telegram-widget-container"
-                                data-username="${username}"
-                                data-msgid="${msgId}">
-                            </div>
-
-                            <div class="post-footer">
-
-                                <a
-                                    href="https://t.me/${username}/${msgId}"
-                                    target="_blank">
-
-                                    فتح البوست 🚀
-
-                                </a>
-
-                            </div>
-                        `;
-
-                        grid.appendChild(card);
+                        allPosts.push({
+                            username,
+                            msgId,
+                            keyword: item.Keyword || 'UNKNOWN'
+                        });
                     }
 
-                } catch(e) {
-
-                    console.log('channel error', e);
-                }
-
+                } catch (e) {}
             });
 
+            // ترتيب عشوائي خفيف
+            allPosts.sort(() => Math.random() - 0.5);
+
+            // Pagination
+            const start =
+                (currentPage - 1) * POSTS_PER_PAGE;
+
+            const end =
+                start + POSTS_PER_PAGE;
+
+            const currentPosts =
+                allPosts.slice(start, end);
+
+            // عرض البوستات
+            currentPosts.forEach(post => {
+
+                const card =
+                    document.createElement('div');
+
+                card.className = 'post-card';
+
+                card.innerHTML = `
+
+                    <div class="post-header">
+
+                        <div class="keyword">
+                            # ${post.keyword}
+                        </div>
+
+                        <div class="channel">
+                            @${post.username}
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="telegram-widget-container"
+                        data-username="${post.username}"
+                        data-msgid="${post.msgId}">
+                    </div>
+
+                    <div class="post-footer">
+
+                        <a
+                            href="https://t.me/${post.username}/${post.msgId}"
+                            target="_blank">
+
+                            فتح البوست 🚀
+
+                        </a>
+
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            // Stats
             document.getElementById('statsDisplay').innerText =
-                `يعرض ${totalPosts} بوست من ${displayChannels.length} قناة`;
+                `صفحة ${currentPage} | ${currentPosts.length} بوست`;
+
+            // Pagination UI
+            renderPagination(allPosts.length);
 
             lazyLoadWidgets();
         }
@@ -379,6 +442,8 @@
 
         function handleSearch() {
 
+            currentPage = 1;
+
             const term =
                 document.getElementById('searchInput')
                 .value
@@ -393,6 +458,66 @@
             });
 
             renderPosts();
+        }
+
+        // ===========================
+        // PAGINATION
+        // ===========================
+
+        function renderPagination(totalPosts) {
+
+            const totalPages =
+                Math.ceil(totalPosts / POSTS_PER_PAGE);
+
+            const pagination =
+                document.getElementById('paginationUI');
+
+            pagination.innerHTML = `
+
+                <button onclick="prevPage()">
+                    السابق
+                </button>
+
+                <span class="page-number">
+                    ${currentPage} / ${totalPages}
+                </span>
+
+                <button onclick="nextPage(${totalPages})">
+                    التالي
+                </button>
+            `;
+        }
+
+
+
+        function nextPage(totalPages) {
+
+            if (currentPage >= totalPages) return;
+
+            currentPage++;
+
+            renderPosts();
+
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+
+
+        function prevPage() {
+
+            if (currentPage <= 1) return;
+
+            currentPage--;
+
+            renderPosts();
+
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         }
 
         document
