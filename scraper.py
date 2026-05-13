@@ -2,6 +2,8 @@ import asyncio
 from playwright.async_api import async_playwright
 import pandas as pd
 import re
+import requests
+from bs4 import BeautifulSoup
 import random
 import time
 import urllib.parse
@@ -14,54 +16,43 @@ import json
 URL_OLD = "https://raw.githubusercontent.com/MoFlow00/Telegram_Scrapper/main/telegram_channels.csv"
 URL_NEW = "https://raw.githubusercontent.com/MoFlow00/Signal-X/main/telegram_data.csv"
 SAVE_FILE = "telegram_data.csv"
+PROGRESS_FILE = "progress_status.json"
 PAGES_TO_SCRAPE = 5
+MAX_RUNTIME_SECONDS = 30 * 60 
+START_TIME = time.time()
+
+# قائمة الكلمات المفتاحية (تم الإبقاء عليها كاملة)
 KEYWORDS = [
-    # Android / Apps
     "premium apk", "pro apps", "modded apps", "unlocked apk",
     "android mod", "cracked software", "nova launcher setup",
     "android apps paid free", "mod apk download", "apk hacks",
     "تطبيقات مهكرة", "برامج برو", "أندرويد مدفوع",
     "ألعاب مهكرة", "تطبيقات معدلة", "نسخة احترافية",
-
-    # AI / Tech
     "machine learning", "best ai tools", "gpt4", "ai automation",
     "chatgpt tools", "ai prompts", "openai tools", "llm tools",
     "ذكاء اصطناعي", "أدوات الذكاء",
     "تقنيات حديثة", "شروحات تقنية", "مواقع ذكاء اصطناعي",
-
-    # Trending AI
     "sora ai", "claude ai", "gemini ai", "cursor ai",
     "bolt ai", "lovable ai", "deepseek", "suno ai",
-    "capcut pro",
-
-    # Programming / Learning
-    "free courses", "udemy coupons", "programming scripts",
+    "capcut pro", "free courses", "udemy coupons", "programming scripts",
     "github repos", "python coding", "excel tutorials",
     "data analysis python", "automation scripts",
     "كورسات مجانية", "دورة برمجية", "تعليم إكسيل",
     "تعلم البرمجة", "مكتبات بايثون", "كتب تقنية",
-
-    # Books / Study
     "pdf books", "engineering books", "medical books",
     "ielts materials", "university notes", "study resources",
     "research papers", "academic resources",
     "ebooks free", "paid courses free",
     "ملفات pdf", "كتب جامعية",
-
-    # UAE / Deals
     "uae offers", "dubai discounts", "coupon codes",
     "amazon deals uae", "noon coupons",
     "uae promo codes", "dubai deals today",
     "عروض الإمارات", "أكواد خصم",
     "تخفيضات دبي", "وفر فلوسك",
-
-    # Media / IPTV
     "iptv links", "netflix premium", "movies hd",
     "live tv", "series hd", "arab movies",
     "قنوات مشفرة", "أفلام وثائقية", "بث مباشر",
     "سيرفرات iptv", "مسلسلات حصرية",
-
-    # Shared / Premium
     "premium accounts", "shared accounts",
     "streaming accounts", "spotify premium",
     "canva pro", "youtube premium",
@@ -70,19 +61,14 @@ KEYWORDS = [
     "serial keys", "warez",
     "كورسات مدفوعة مجانا",
     "اشتراكات مجانية",
-
-    # Gaming
     "gaming leaks", "game mods",
     "steam free games", "pc games repack",
+    "gaming news", "ps5 jailbreak",
     "switch mods", "cheat engine",
     "قنوات ألعاب",
-
-    # APIs / Tools
     "free api key", "free llm", "open source tools",
     "automation tools",
     "مواقع مفيدة", "معلومات عامة",
-
-    # Cybersecurity / Privacy
     "ethical hacking",
     "bug bounty",
     "osint tools",
@@ -98,8 +84,6 @@ KEYWORDS = [
     "أمن سيبراني",
     "اختبار اختراق",
     "أدوات لينكس",
-
-    # Productivity
     "notion templates",
     "obsidian vault",
     "productivity apps",
@@ -111,8 +95,6 @@ KEYWORDS = [
     "قوالب نوتشن",
     "تنظيم الوقت",
     "العمل الحر",
-
-    # Design / Content
     "video editing",
     "after effects presets",
     "premiere pro tips",
@@ -124,20 +106,18 @@ KEYWORDS = [
     "مونتاج فيديو",
     "تصميم جرافيك",
     "صناعة المحتوى",
-
-    # Finance / Online Income
     "side hustle",
     "online business",
     "make money online",
     "dropshipping",
     "affiliate marketing",
+    "crypto news",
     "stock market",
     "investing tools",
     "الربح من الانترنت",
     "العمل اونلاين",
     "الاستثمار",
-
-    # AI Creation
+    "العمل الحر",
     "ai image generation",
     "text to video ai",
     "ai voice tools",
@@ -149,8 +129,6 @@ KEYWORDS = [
     "مولد صور بالذكاء الاصطناعي",
     "هندسة البرومبت",
     "نماذج محلية",
-
-    # Developer / DevOps
     "docker tutorial",
     "kubernetes",
     "self hosted tools",
@@ -163,8 +141,6 @@ KEYWORDS = [
     "github automation",
     "استضافة ذاتية",
     "إدارة سيرفرات",
-
-    # Mobile / Devices
     "iphone tips",
     "samsung tricks",
     "android customization",
@@ -175,8 +151,6 @@ KEYWORDS = [
     "تطبيقات ايفون",
     "خدع أندرويد",
     "أجهزة ذكية",
-
-    # Education / Career
     "cv templates",
     "interview questions",
     "tech interview",
@@ -188,8 +162,6 @@ KEYWORDS = [
     "قوالب سيرة ذاتية",
     "تعلم الإنجليزية",
     "تطوير مهني",
-
-    # Entertainment
     "anime hd",
     "documentary films",
     "science videos",
@@ -199,8 +171,6 @@ KEYWORDS = [
     "انمي مترجم",
     "ملخصات مباريات",
     "وثائقيات",
-
-    # UAE / Local
     "dubai tech",
     "uae startups",
     "dubai events",
@@ -212,20 +182,26 @@ KEYWORDS = [
     "فعاليات دبي"
 ]
 
+def load_progress():
+    if os.path.exists(PROGRESS_FILE):
+        try:
+            with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: return {}
+    return {}
+
+def save_progress(keyword, page):
+    progress = load_progress()
+    progress[keyword] = page
+    with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+        json.dump(progress, f, ensure_ascii=False, indent=4)
+
 async def run_scraper():
     print("🚀 Starting Integrated Scraper (Search + Merge)...")
-    
-    # 1. جلب البيانات القديمة للدمج
-    try:
-        df_old = pd.read_csv(URL_OLD)
-        df_new = pd.read_csv(URL_NEW)
-        existing_df = pd.concat([df_old, df_new], ignore_index=True)
-    except Exception as e:
-        print(f"⚠️ Warning during initial load: {e}")
-        existing_df = pd.DataFrame(columns=['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID'])
-
-    # 2. منطق البحث الأصلي (Playwright) في xtea
+    progress = load_progress()
+    fail_count = 0
     new_results = []
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(
@@ -233,23 +209,41 @@ async def run_scraper():
         )
         
         for keyword in KEYWORDS:
-            print(f"🔍 Searching for: {keyword}")
+            if fail_count >= 3:
+                print("\n[!] Circuit Breaker Triggered. Exiting...")
+                break
+
+            last_page_finished = progress.get(keyword, 0)
+            if last_page_finished >= PAGES_TO_SCRAPE:
+                continue
+
+            print(f"\n>>> [{keyword}] -> Page {last_page_finished + 1}")
             page = await context.new_page()
             encoded_query = urllib.parse.quote(keyword)
             target_url = f"https://xtea.pages.dev/search?q={encoded_query}"
             
+            keyword_success = False
+
             try:
                 await page.goto(target_url, wait_until="networkidle", timeout=60000)
+                
                 for current_page in range(1, PAGES_TO_SCRAPE + 1):
-                    if current_page > 1:
-                        next_btn = page.locator(f".gsc-cursor-page >> text='{current_page}'")
-                        if await next_btn.is_visible():
-                            await next_btn.click()
-                            await page.wait_for_timeout(10000)
-                        else:
-                            break
-                    
+                    if time.time() - START_TIME > MAX_RUNTIME_SECONDS:
+                        print(f"[!] Time limit reached.")
+                        break
+
+                    if current_page <= last_page_finished:
+                        continue
+
+                    print(f"  -- Scraping page {current_page}...")
                     try:
+                        if current_page > 1:
+                            next_btn = page.locator(f".gsc-cursor-page >> text='{current_page}'")
+                            if await next_btn.is_visible():
+                                await next_btn.click()
+                                await page.wait_for_timeout(10000)
+                            else: break
+                        
                         await page.wait_for_selector(".gsc-webResult", timeout=15000)
                         raw_html = await page.content()
                         raw_matches = re.findall(r"t\.me\/[a-zA-Z0-9_\-\+\/\?=&]+", urllib.parse.unquote(raw_html))
@@ -270,35 +264,60 @@ async def run_scraper():
                                     "Subscribers": "N/A",
                                     "LatestID": None
                                 })
-                    except:
-                        print(f"No more results for {keyword} on page {current_page}")
+                        
+                        save_progress(keyword, current_page)
+                        keyword_success = True
+                        fail_count = 0
+                        time.sleep(random.uniform(2, 5))
+
+                    except Exception:
+                        print(f"  [!] No more results on page {current_page}")
                         break
-                    
-                    time.sleep(random.uniform(2, 5))
+
+                if not keyword_success:
+                    fail_count += 1
+
             except Exception as e:
-                print(f"⚠️ Error with keyword {keyword}: {e}")
+                print(f"[!] Error loading {keyword}: {e}")
+                fail_count += 1
+            
             await page.close()
+            time.sleep(random.uniform(10, 20))
+
         await browser.close()
 
-    # 3. الدمج النهائي والتنظيف
+    # --- مـنـطـق الـدمـج والـتـنـظـيـف الـنهـائي ---
+    print("\n📦 Consolidating and Cleaning Data...")
+    
+    # 1. جلب البيانات الخارجية
+    try:
+        df_old = pd.read_csv(URL_OLD)
+        df_new = pd.read_csv(URL_NEW)
+        existing_df = pd.concat([df_old, df_new], ignore_index=True)
+    except:
+        existing_df = pd.DataFrame(columns=['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID'])
+
+    # 2. تحويل النتائج الجديدة لـ DataFrame
     new_df = pd.DataFrame(new_results)
+    
+    # 3. الدمج الشامل
     final_df = pd.concat([existing_df, new_df], ignore_index=True)
     
-    required_cols = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
-    for col in required_cols:
+    # 4. توحيد العواميد الـ 5 المطلوبة
+    cols = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
+    for col in cols:
         if col not in final_df.columns:
             final_df[col] = None
-    
-    final_df = final_df[required_cols]
+    final_df = final_df[cols]
 
-    # تحويل LatestID لرقم لضمان الترتيب الصحيح
+    # 5. مسح التكرار مع الحفاظ على القنوات التي لها LatestID
     final_df['LatestID'] = pd.to_numeric(final_df['LatestID'], errors='coerce')
     final_df = final_df.sort_values(by='LatestID', ascending=False)
     final_df.drop_duplicates(subset=['Link'], keep='first', inplace=True)
 
-    # 4. الحفظ النهائي
+    # 6. الحفظ النهائي
     final_df.to_csv(SAVE_FILE, index=False, encoding="utf-8-sig")
-    print(f"✨ Task Done! Total unique channels in {SAVE_FILE}: {len(final_df)}")
+    print(f"✨ Success! Total unique channels: {len(final_df)}")
 
 if __name__ == "__main__":
     asyncio.run(run_scraper())
