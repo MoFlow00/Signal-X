@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
+
 <head>
+
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>MoFlow Radar Ultra</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Signal-X</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -19,22 +22,13 @@
   --surface3:#30363d;
 
   --blue:#0ea5e9;
-  --blue-dim:#0284c7;
   --blue-glow:rgba(14,165,233,.12);
 
   --text:#e6edf3;
   --text-muted:#8b949e;
-  --text-dim:#6e7681;
 
   --border:rgba(240,246,252,.1);
   --border-soft:rgba(240,246,252,.06);
-
-  --green:#3fb950;
-
-  --radius-sm:8px;
-  --radius-md:12px;
-  --radius-lg:18px;
-  --radius-xl:24px;
 
 }
 
@@ -46,12 +40,10 @@
   --surface3:#e1e4e8;
 
   --blue:#0969da;
-  --blue-dim:#0550ae;
   --blue-glow:rgba(9,105,218,.08);
 
   --text:#1f2328;
   --text-muted:#57606a;
-  --text-dim:#6e7781;
 
   --border:rgba(31,35,40,.12);
   --border-soft:rgba(31,35,40,.06);
@@ -67,10 +59,12 @@
 body{
 
   font-family:'Inter',sans-serif;
+
   background:var(--bg);
   color:var(--text);
+
   min-height:100vh;
-  overflow-x:hidden;
+
   transition:.25s;
 
 }
@@ -81,12 +75,12 @@ header{
 
   position:sticky;
   top:0;
+
   z-index:999;
 
   background:rgba(13,17,23,.92);
 
   backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
 
   border-bottom:1px solid var(--border);
 
@@ -99,9 +93,10 @@ header{
 .header-inner{
 
   max-width:1600px;
+
   margin:auto;
 
-  padding:18px 24px;
+  padding:20px 24px;
 
   display:flex;
   flex-direction:column;
@@ -121,14 +116,14 @@ header{
 
   display:flex;
   align-items:center;
-  gap:12px;
+  gap:14px;
 
 }
 
 .logo-icon{
 
-  width:44px;
-  height:44px;
+  width:46px;
+  height:46px;
 
   border-radius:14px;
 
@@ -146,41 +141,15 @@ header{
 
 .logo-text{
 
-  font-size:22px;
+  font-size:24px;
   font-weight:700;
-  letter-spacing:-.4px;
-
-}
-
-.logo-badge{
-
-  background:var(--blue-glow);
-
-  border:1px solid rgba(14,165,233,.25);
-
-  color:var(--blue);
-
-  font-size:11px;
-  font-weight:700;
-
-  padding:4px 10px;
-
-  border-radius:50px;
-
-}
-
-.header-right{
-
-  display:flex;
-  align-items:center;
-  gap:14px;
 
 }
 
 .theme-toggle{
 
-  width:42px;
-  height:42px;
+  width:44px;
+  height:44px;
 
   border:none;
   cursor:pointer;
@@ -199,50 +168,6 @@ header{
 .theme-toggle:hover{
 
   background:var(--surface3);
-  transform:translateY(-1px);
-
-}
-
-.status{
-
-  display:flex;
-  align-items:center;
-  gap:8px;
-
-}
-
-.status-dot{
-
-  width:9px;
-  height:9px;
-
-  border-radius:50%;
-  background:var(--green);
-
-  box-shadow:0 0 12px rgba(63,185,80,.8);
-
-  animation:pulse 2s infinite;
-
-}
-
-@keyframes pulse{
-
-  0%,100%{
-    opacity:1;
-  }
-
-  50%{
-    opacity:.4;
-  }
-
-}
-
-.status-label{
-
-  font-size:13px;
-  font-weight:600;
-
-  color:var(--text-muted);
 
 }
 
@@ -252,14 +177,15 @@ header{
 
   display:flex;
   gap:14px;
+
   flex-wrap:wrap;
 
 }
 
 .search-wrapper{
 
-  position:relative;
   flex:1;
+  position:relative;
 
 }
 
@@ -267,12 +193,12 @@ header{
 
   position:absolute;
 
-  right:18px;
+  left:16px;
   top:50%;
 
   transform:translateY(-50%);
 
-  color:var(--text-dim);
+  color:var(--text-muted);
 
 }
 
@@ -280,21 +206,19 @@ header{
 
   width:100%;
 
-  padding:15px 18px 15px 50px;
+  padding:15px 18px 15px 46px;
 
-  border-radius:18px;
+  background:var(--surface2);
 
   border:1px solid var(--border);
 
-  background:var(--surface2);
+  border-radius:18px;
 
   color:var(--text);
 
   font-size:15px;
 
   outline:none;
-
-  transition:.25s;
 
 }
 
@@ -304,27 +228,23 @@ header{
 
   box-shadow:0 0 0 4px var(--blue-glow);
 
-  background:var(--surface);
-
 }
 
 .sort-select{
 
   min-width:180px;
 
-  border:none;
-  outline:none;
+  padding:0 14px;
 
   border-radius:18px;
 
-  background:var(--surface2);
-  color:var(--text);
-
   border:1px solid var(--border);
 
-  padding:0 14px;
+  background:var(--surface2);
 
-  font-size:14px;
+  color:var(--text);
+
+  outline:none;
 
 }
 
@@ -333,6 +253,7 @@ header{
 .controls-bar{
 
   max-width:1600px;
+
   margin:22px auto 0;
 
   padding:0 24px;
@@ -343,24 +264,19 @@ header{
 
   display:inline-flex;
   align-items:center;
-  gap:10px;
 
   background:var(--surface);
 
   border:1px solid var(--border);
 
-  padding:10px 16px;
-
   border-radius:999px;
+
+  padding:10px 16px;
 
   color:var(--text-muted);
 
   font-size:13px;
 
-}
-
-.stats-pill strong{
-  color:var(--blue);
 }
 
 /* GRID */
@@ -395,13 +311,13 @@ header{
 
   transition:.25s;
 
-  animation:fadeUp .35s ease both;
+  animation:fadeUp .3s ease;
 
 }
 
 .post-card:hover{
 
-  transform:translateY(-4px);
+  transform:translateY(-3px);
 
   border-color:rgba(14,165,233,.3);
 
@@ -413,7 +329,7 @@ header{
 
   from{
     opacity:0;
-    transform:translateY(12px);
+    transform:translateY(10px);
   }
 
   to{
@@ -434,14 +350,6 @@ header{
   background:var(--surface2);
 
   border-bottom:1px solid var(--border-soft);
-
-}
-
-.header-left{
-
-  display:flex;
-  align-items:center;
-  gap:8px;
 
 }
 
@@ -501,7 +409,7 @@ header{
 
   background-size:200% 100%;
 
-  animation:shimmer 1.4s infinite;
+  animation:shimmer 1.5s infinite;
 
 }
 
@@ -546,13 +454,9 @@ header{
   font-size:13px;
   font-weight:700;
 
-  transition:.2s;
-
 }
 
 .open-btn:hover{
-
-  transform:scale(1.03);
 
   background:rgba(14,165,233,.18);
 
@@ -567,7 +471,7 @@ header{
   align-items:center;
   gap:12px;
 
-  padding:30px 24px 40px;
+  padding:30px;
 
 }
 
@@ -585,15 +489,11 @@ header{
 
   cursor:pointer;
 
-  transition:.2s;
-
 }
 
 .pg-btn:hover:not(:disabled){
 
   background:var(--surface3);
-
-  color:var(--blue);
 
 }
 
@@ -613,9 +513,9 @@ header{
   align-items:center;
   justify-content:center;
 
-  gap:18px;
+  gap:16px;
 
-  padding:90px 20px;
+  padding:80px 20px;
 
   color:var(--text-muted);
 
@@ -632,7 +532,7 @@ header{
 
   border-top-color:var(--blue);
 
-  animation:spin .8s linear infinite;
+  animation:spin .7s linear infinite;
 
 }
 
@@ -665,6 +565,7 @@ header{
 }
 
 </style>
+
 </head>
 
 <body>
@@ -679,25 +580,13 @@ header{
 
         <div class="logo-icon">📡</div>
 
-        <div class="logo-text">MoFlow Radar</div>
-
-        <div class="logo-badge">LIVE</div>
+        <div class="logo-text">Signal-X</div>
 
       </div>
 
-      <div class="header-right">
-
-        <button class="theme-toggle" id="themeToggle">🌓</button>
-
-        <div class="status">
-
-          <div class="status-dot"></div>
-
-          <div class="status-label">ONLINE</div>
-
-        </div>
-
-      </div>
+      <button class="theme-toggle" id="themeToggle">
+        🌓
+      </button>
 
     </div>
 
@@ -710,16 +599,16 @@ header{
         <input
           type="text"
           id="searchInput"
-          placeholder="ابحث باسم القناة أو الكلمة المفتاحية"
+          placeholder="Search channels or keywords"
         />
 
       </div>
 
       <select class="sort-select" id="sortSelect">
 
-        <option value="random">عشوائي</option>
+        <option value="random">Random</option>
 
-        <option value="newest">الأحدث</option>
+        <option value="newest">Newest First</option>
 
       </select>
 
@@ -732,7 +621,7 @@ header{
 <div class="controls-bar">
 
   <div class="stats-pill" id="statsDisplay">
-    جاري التحميل...
+    Loading...
   </div>
 
 </div>
@@ -741,7 +630,7 @@ header{
 
   <div class="spinner"></div>
 
-  <span>جاري تحميل البيانات...</span>
+  <span>Loading data...</span>
 
 </div>
 
@@ -751,7 +640,8 @@ header{
 
 <script>
 
-const CSV_URL = 'https://raw.githubusercontent.com/moflow00/Signal-X/main/telegram_data.csv';
+const CSV_URL =
+'https://raw.githubusercontent.com/moflow00/Signal-X/main/telegram_data.csv';
 
 let allData = [];
 let filteredData = [];
@@ -759,28 +649,37 @@ let filteredData = [];
 let currentPage = 1;
 let currentSort = 'random';
 
-const POSTS_PER_PAGE = 50;
-const MAX_CHANNELS = 5000;
+const POSTS_PER_PAGE = 100;
 
 /* THEME */
 
-const themeToggle = document.getElementById('themeToggle');
+const themeToggle =
+document.getElementById('themeToggle');
 
-themeToggle.addEventListener('click', () => {
+themeToggle.addEventListener('click',()=>{
 
-  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const currentTheme =
+  document.documentElement.getAttribute('data-theme');
 
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  const newTheme =
+  currentTheme === 'light' ? 'dark' : 'light';
 
-  document.documentElement.setAttribute('data-theme', newTheme);
+  document.documentElement.setAttribute(
+    'data-theme',
+    newTheme
+  );
 
-  localStorage.setItem('theme', newTheme);
+  localStorage.setItem('theme',newTheme);
 
 });
 
-const savedTheme = localStorage.getItem('theme') || 'dark';
+const savedTheme =
+localStorage.getItem('theme') || 'dark';
 
-document.documentElement.setAttribute('data-theme', savedTheme);
+document.documentElement.setAttribute(
+  'data-theme',
+  savedTheme
+);
 
 /* INIT */
 
@@ -801,7 +700,8 @@ async function initRadar(){
 
         allData = results.data.filter(row=>{
 
-          const latestId = String(row.LatestID || '').trim();
+          const latestId =
+          String(row.LatestID || '').trim();
 
           return(
 
@@ -821,7 +721,8 @@ async function initRadar(){
 
         filteredData = [...allData];
 
-        document.getElementById('loading').style.display = 'none';
+        document.getElementById('loading').style.display =
+        'none';
 
         renderPosts();
 
@@ -835,7 +736,7 @@ async function initRadar(){
 
     document.getElementById('loading').innerHTML = `
       <div class="empty-state">
-        <h2>فشل تحميل البيانات</h2>
+        <h2>Failed to load data</h2>
       </div>
     `;
 
@@ -847,23 +748,26 @@ async function initRadar(){
 
 function renderPosts(){
 
-  const grid = document.getElementById('radarGrid');
+  const grid =
+  document.getElementById('radarGrid');
 
   grid.innerHTML = '';
 
   let allPosts = [];
 
-  const channels = filteredData.slice(0, MAX_CHANNELS);
-
-  channels.forEach(item=>{
+  filteredData.forEach(item=>{
 
     try{
 
-      const username = item.Link.split('t.me/')[1].split('/')[0];
+      const username =
+      item.Link.split('t.me/')[1].split('/')[0];
 
-      const latestId = parseInt(item.LatestID);
+      const latestId =
+      parseInt(item.LatestID);
 
-      for(let i=0;i<5;i++){
+      /* LAST 20 POSTS */
+
+      for(let i=0;i<20;i++){
 
         const msgId = latestId - i;
 
@@ -883,6 +787,8 @@ function renderPosts(){
 
   });
 
+  /* SORT */
+
   if(currentSort === 'random'){
 
     allPosts.sort(()=>Math.random() - 0.5);
@@ -893,17 +799,23 @@ function renderPosts(){
 
   }
 
-  const start = (currentPage - 1) * POSTS_PER_PAGE;
+  const start =
+  (currentPage - 1) * POSTS_PER_PAGE;
 
-  const end = start + POSTS_PER_PAGE;
+  const end =
+  start + POSTS_PER_PAGE;
 
-  const currentPosts = allPosts.slice(start,end);
+  const currentPosts =
+  allPosts.slice(start,end);
 
   if(currentPosts.length === 0){
 
     grid.innerHTML = `
-      <div class="empty-state" style="grid-column:1/-1">
-        <h2>لا توجد نتائج</h2>
+      <div class="empty-state"
+      style="grid-column:1/-1">
+
+        <h2>No results found</h2>
+
       </div>
     `;
 
@@ -911,25 +823,23 @@ function renderPosts(){
 
   }
 
-  currentPosts.forEach((post,idx)=>{
+  currentPosts.forEach((post,index)=>{
 
-    const card = document.createElement('div');
+    const card =
+    document.createElement('div');
 
     card.className = 'post-card';
 
-    card.style.animationDelay = (idx * 15) + 'ms';
+    card.style.animationDelay =
+    (index * 15) + 'ms';
 
     card.innerHTML = `
 
       <div class="post-header">
 
-        <div class="header-left">
-
-          <span class="keyword-tag">
-            #${escHtml(post.keyword)}
-          </span>
-
-        </div>
+        <span class="keyword-tag">
+          #${escHtml(post.keyword)}
+        </span>
 
         <span class="channel-tag">
           @${escHtml(post.username)}
@@ -951,11 +861,11 @@ function renderPosts(){
 
         <a
           class="open-btn"
-          target="_blank"
           href="https://t.me/${escHtml(post.username)}/${post.msgId}"
+          target="_blank"
         >
 
-          فتح البوست ↗
+          Open Post ↗
 
         </a>
 
@@ -968,8 +878,10 @@ function renderPosts(){
   });
 
   document.getElementById('statsDisplay').innerHTML = `
-    عدد البوستات:
+
+    Total Posts:
     <strong>${allPosts.length}</strong>
+
   `;
 
   renderPagination(allPosts.length);
@@ -981,18 +893,19 @@ function renderPosts(){
 function escHtml(str){
 
   return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+  .replace(/&/g,'&amp;')
+  .replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;');
 
 }
 
-/* WIDGETS */
+/* TELEGRAM WIDGETS */
 
 function lazyLoadWidgets(){
 
-  const observer = new IntersectionObserver((entries)=>{
+  const observer =
+  new IntersectionObserver((entries)=>{
 
     entries.forEach(entry=>{
 
@@ -1006,11 +919,13 @@ function lazyLoadWidgets(){
 
       el.innerHTML = '';
 
-      const script = document.createElement('script');
+      const script =
+      document.createElement('script');
 
       script.async = true;
 
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.src =
+      'https://telegram.org/js/telegram-widget.js?22';
 
       script.setAttribute(
         'data-telegram-post',
@@ -1022,7 +937,9 @@ function lazyLoadWidgets(){
       script.setAttribute('data-userpic','false');
 
       const currentTheme =
-        document.documentElement.getAttribute('data-theme');
+      document.documentElement.getAttribute(
+        'data-theme'
+      );
 
       if(currentTheme === 'dark'){
 
@@ -1034,11 +951,13 @@ function lazyLoadWidgets(){
 
       setTimeout(()=>{
 
-        const iframe = el.querySelector('iframe');
+        const iframe =
+        el.querySelector('iframe');
 
         if(!iframe || iframe.offsetHeight < 120){
 
-          const card = el.closest('.post-card');
+          const card =
+          el.closest('.post-card');
 
           if(card){
 
@@ -1061,8 +980,8 @@ function lazyLoadWidgets(){
   });
 
   document
-    .querySelectorAll('.telegram-widget-container')
-    .forEach(el=>observer.observe(el));
+  .querySelectorAll('.telegram-widget-container')
+  .forEach(el=>observer.observe(el));
 
 }
 
@@ -1073,10 +992,10 @@ function handleSearch(){
   currentPage = 1;
 
   const term =
-    document
-      .getElementById('searchInput')
-      .value
-      .toLowerCase();
+  document
+  .getElementById('searchInput')
+  .value
+  .toLowerCase();
 
   filteredData = allData.filter(item=>
 
@@ -1093,29 +1012,29 @@ function handleSearch(){
 }
 
 document
-  .getElementById('searchInput')
-  .addEventListener('input',handleSearch);
+.getElementById('searchInput')
+.addEventListener('input',handleSearch);
 
 /* SORT */
 
 document
-  .getElementById('sortSelect')
-  .addEventListener('change',(e)=>{
+.getElementById('sortSelect')
+.addEventListener('change',(e)=>{
 
-    currentSort = e.target.value;
+  currentSort = e.target.value;
 
-    currentPage = 1;
+  currentPage = 1;
 
-    renderPosts();
+  renderPosts();
 
-  });
+});
 
 /* PAGINATION */
 
 function renderPagination(totalPosts){
 
   const totalPages =
-    Math.ceil(totalPosts / POSTS_PER_PAGE);
+  Math.ceil(totalPosts / POSTS_PER_PAGE);
 
   document.getElementById('paginationUI').innerHTML = `
 
@@ -1125,11 +1044,11 @@ function renderPagination(totalPosts){
       ${currentPage <= 1 ? 'disabled' : ''}
     >
 
-      السابق
+      Previous
 
     </button>
 
-    <span style="color:var(--text-muted);font-size:14px">
+    <span style="color:var(--text-muted)">
 
       ${currentPage} / ${totalPages}
 
@@ -1141,7 +1060,7 @@ function renderPagination(totalPosts){
       ${currentPage >= totalPages ? 'disabled' : ''}
     >
 
-      التالي
+      Next
 
     </button>
 
@@ -1156,8 +1075,10 @@ function changePage(step){
   renderPosts();
 
   window.scrollTo({
+
     top:0,
     behavior:'smooth'
+
   });
 
 }
