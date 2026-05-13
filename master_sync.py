@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 import time
 import random
+import re
 
 # ======================
 # CONFIG
@@ -19,6 +20,13 @@ AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 ]
+
+def is_clean_lang(text):
+    if not text or pd.isna(text): return True
+    # يسمح فقط بالحروف الإنجليزية، العربية، الأرقام، والرموز الشائعة
+    # يرفض تلقائياً الكيريلية (روسي)، الديفاناغاري (هندي)، وغيرها
+    pattern = r'^[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z0-9\s.,!@#$%^&*()_+-=\[\]{};\':"\\|,.<>\/?]+$'
+    return bool(re.match(pattern, str(text)))
 
 def get_latest_id(link):
     time.sleep(random.uniform(0.3, 0.8))
@@ -37,15 +45,11 @@ def get_latest_id(link):
     except: return None
 
 def sync():
-    print("🔄 Merging all sources...")
+    print("🔄 Merging and Filtering by Language...")
     
-    # 1. Load Local
     df_local = pd.read_csv(LOCAL_DATA) if os.path.exists(LOCAL_DATA) else pd.DataFrame(columns=COLS)
-    
-    # 2. Load Manual
     df_manual = pd.read_csv(MANUAL_DATA) if os.path.exists(MANUAL_DATA) else pd.DataFrame(columns=COLS)
     
-    # 3. Load Remote
     try:
         df_remote = pd.read_csv(REMOTE_CHANNELS)
         df_remote.columns = df_remote.columns.str.strip().str.replace('_', ' ')
@@ -53,7 +57,6 @@ def sync():
     except:
         df_remote = pd.DataFrame(columns=COLS)
 
-    # Combine & Clean
     combined = pd.concat([df_local, df_manual, df_remote], ignore_index=True)
     
     for col in COLS:
@@ -61,6 +64,12 @@ def sync():
             
     combined = combined[COLS]
     combined.drop_duplicates(subset=['Link'], keep='first', inplace=True)
+
+    # تطبيق فلتر اللغة الصارم على اسم القناة والكلمة المفتاحية
+    initial_count = len(combined)
+    combined = combined[combined['Channel Name'].apply(is_clean_lang)]
+    combined = combined[combined['Keyword'].apply(is_clean_lang)]
+    print(f"🧹 Language Filter: Removed {initial_count - len(combined)} non-Arabic/English channels.")
     
     # Hunt IDs
     combined['LatestID'] = pd.to_numeric(combined['LatestID'], errors='coerce')
