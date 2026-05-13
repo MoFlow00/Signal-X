@@ -1,10 +1,8 @@
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import os
 import time
-import random
 import re
 
 # ======================
@@ -16,74 +14,88 @@ REMOTE_CHANNELS = "https://raw.githubusercontent.com/MoFlow00/Telegram_Scrapper/
 FINAL_FILE = "telegram_data.csv"
 COLS = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
 
-AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-]
+# تقليل العمال لتجنب البلوك السريع من GitHub IP
+MAX_WORKERS = 10 
+
+session = requests.Session()
+session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+})
+
+# ======================
+# FILTERS & REGEX
+# ======================
+POST_REGEX = re.compile(r'data-post="[^"]+/(\d+)"')
 
 def is_clean_lang(text):
     if not text or pd.isna(text): return True
-    # يسمح فقط بالحروف الإنجليزية، العربية، الأرقام، والرموز الشائعة
-    # يرفض تلقائياً الكيريلية (روسي)، الديفاناغاري (هندي)، وغيرها
-    pattern = r'^[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z0-9\s.,!@#$%^&*()_+-=\[\]{};\':"\\|,.<>\/?]+$'
+    # حصر المحتوى في العربي والإنجليزي والرموز الأساسية فقط
+    pattern = r'^[\u0600-\u06FFa-zA-Z0-9\s._\-@()]+$'
     return bool(re.match(pattern, str(text)))
 
 def get_latest_id(link):
-    time.sleep(random.uniform(0.3, 0.8))
     try:
-        user = link.split('/')[-1].split('?')[0]
-        if not user or "+" in user or "joinchat" in user: return None
-        headers = {'User-Agent': random.choice(AGENTS)}
-        r = requests.get(f"https://t.me/s/{user}", headers=headers, timeout=15)
-        if r.status_code != 200: return None
-        soup = BeautifulSoup(r.text, 'html.parser')
-        msgs = soup.find_all('div', {'class': 'tgme_widget_message'})
-        if msgs:
-            last_post = msgs[-1].get('data-post')
-            return last_post.split('/')[-1] if last_post else None
-        return None
-    except: return None
+        user = link.rstrip('/').split('/')[-1]
+        if not user or any(x in user for x in ["+", "joinchat", "telegram.me"]):
+            return None
 
+        # استخدام طلب محدد لجزء من الصفحة لتوفير الوقت والبيانات
+        with session.get(f"https://t.me/s/{user}", timeout=15, stream=True) as r:
+            if r.status_code != 200: return None
+            # قراءة أول 50 كيلوبايت فقط (كافية لاستخراج المعرفات)
+            text = r.raw.read(50000).decode('utf-8', errors='ignore')
+            matches = POST_REGEX.findall(text)
+            return int(max(matches, key=int)) if matches else None
+    except:
+        return None
+
+def safe_load_csv(path):
+    if not os.path.exists(path): return pd.DataFrame(columns=COLS)
+    try:
+        # استخدام sep=None لاكتشاف الفواصل (عادية أو منقوطة) تلقائياً
+        return pd.read_csv(path, sep=None, engine='python', on_bad_lines='skip', quotechar='"')
+    except:
+        return pd.DataFrame(columns=COLS)
+
+# ======================
+# CORE LOGIC
+# ======================
 def sync():
-    print("🔄 Merging and Filtering by Language...")
-    
-    df_local = pd.read_csv(LOCAL_DATA) if os.path.exists(LOCAL_DATA) else pd.DataFrame(columns=COLS)
-    df_manual = pd.read_csv(MANUAL_DATA) if os.path.exists(MANUAL_DATA) else pd.DataFrame(columns=COLS)
+    print("🔄 Loading and Merging Sources...")
+    df_local = safe_load_csv(LOCAL_DATA)
+    df_manual = safe_load_csv(MANUAL_DATA)
     
     try:
-        df_remote = pd.read_csv(REMOTE_CHANNELS)
+        df_remote = pd.read_csv(REMOTE_CHANNELS, on_bad_lines='skip')
         df_remote.columns = df_remote.columns.str.strip().str.replace('_', ' ')
         df_remote.rename(columns={'ChannelName': 'Channel Name', 'channel name': 'Channel Name'}, inplace=True)
     except:
         df_remote = pd.DataFrame(columns=COLS)
 
     combined = pd.concat([df_local, df_manual, df_remote], ignore_index=True)
-    
-    for col in COLS:
-        if col not in combined.columns: combined[col] = None
-            
-    combined = combined[COLS]
-    combined.drop_duplicates(subset=['Link'], keep='first', inplace=True)
+    combined = combined.reindex(columns=COLS).drop_duplicates(subset=['Link'], keep='first')
 
-    # تطبيق فلتر اللغة الصارم على اسم القناة والكلمة المفتاحية
-    initial_count = len(combined)
-    combined = combined[combined['Channel Name'].apply(is_clean_lang)]
-    combined = combined[combined['Keyword'].apply(is_clean_lang)]
-    print(f"🧹 Language Filter: Removed {initial_count - len(combined)} non-Arabic/English channels.")
-    
-    # Hunt IDs
+    # تنظيف اللغات
+    initial_len = len(combined)
+    combined = combined[combined['Channel Name'].apply(is_clean_lang) & combined['Keyword'].apply(is_clean_lang)]
+    print(f"🧹 Language Filter: Removed {initial_len - len(combined)} channels")
+
+    # تحديث المعرفات
     combined['LatestID'] = pd.to_numeric(combined['LatestID'], errors='coerce')
     mask = combined['LatestID'].isna()
-    targets = combined[mask]['Link'].tolist()
+    targets = combined.loc[mask, 'Link'].tolist()
 
     if targets:
-        print(f"🎯 Hunting IDs for {len(targets)} channels...")
-        with ThreadPoolExecutor(max_workers=10) as ex:
+        print(f"🎯 Hunting {len(targets)} IDs...")
+        start = time.time()
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
             results = list(ex.map(get_latest_id, targets))
+        
         combined.loc[mask, 'LatestID'] = results
-    
+        print(f"⚡ Sync finished in {round(time.time()-start, 2)}s")
+
     combined.to_csv(FINAL_FILE, index=False, encoding='utf-8-sig')
-    print(f"✅ Sync Complete. Total: {len(combined)} channels.")
+    print(f"✅ Database updated: {len(combined)} channels total.")
 
 if __name__ == "__main__":
     sync()
