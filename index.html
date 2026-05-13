@@ -1,45 +1,174 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>MoFlow Radar Dashboard</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <title>MoFlow Radar Ultra</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet"/>
     <style>
-        :root { --main: #0088cc; --bg: #f0f2f5; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 350px; background: #fff; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
-        .search-area { padding: 15px; background: var(--main); color: #fff; }
-        .search-area input { width: 100%; padding: 10px; border-radius: 5px; border: none; }
-        .channel-list { flex: 1; overflow-y: auto; }
-        .channel-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
-        .channel-item:hover { background: #f0f7ff; }
-        .main-view { flex: 1; display: flex; flex-direction: column; background: #e7ebf0; }
-        .timeline { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .post-box { width: 100%; max-width: 500px; margin-bottom: 15px; background: #fff; border-radius: 8px; }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:flex; justify-content:center; align-items:center; z-index:9999; }
+        :root {
+            /* Dark Theme */
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface2: #21262d;
+            --surface3: #30363d;
+            --blue: #0ea5e9;
+            --blue-glow: rgba(14,165,233,.12);
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --text-dim: #6e7681;
+            --border: rgba(240,246,252,.1);
+            --border-soft: rgba(240,246,252,.06);
+            --green: #3fb950;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+        }
+
+        [data-theme="light"] {
+            --bg: #f6f8fa;
+            --surface: #ffffff;
+            --surface2: #f0f2f5;
+            --surface3: #e1e4e8;
+            --blue: #0969da;
+            --text: #1f2328;
+            --text-muted: #57606a;
+            --text-dim: #6e7781;
+            --border: rgba(31,35,40,0.15);
+            --border-soft: rgba(31,35,40,0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Inter', 'Noto+Kufi+Arabic', sans-serif;
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
+        }
+
+        header {
+            position: sticky; top: 0; z-index: 999;
+            background: var(--bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 24px;
+        }
+
+        .header-inner { max-width: 1400px; margin: auto; display: flex; flex-direction: column; gap: 15px; }
+        .header-top { display: flex; align-items: center; justify-content: space-between; }
+        
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg,#0ea5e9,#0284c7); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .logo-text { font-size: 20px; font-weight: 700; }
+
+        .controls-row { display: flex; gap: 12px; align-items: center; }
+        .search-wrapper { position: relative; flex-grow: 1; }
+        
+        #searchInput {
+            width: 100%; padding: 12px 45px 12px 15px;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius-md); color: var(--text); outline: none;
+        }
+
+        .sort-select {
+            padding: 12px; background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius-md); color: var(--text); cursor: pointer;
+        }
+
+        .radar-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px; padding: 24px; max-width: 1400px; margin: auto;
+        }
+
+        .post-card {
+            background: var(--surface); border-radius: var(--radius-lg);
+            border: 1px solid var(--border); overflow: hidden;
+            transition: transform 0.2s; animation: fadeIn 0.4s ease;
+        }
+
+        .post-card:hover { transform: translateY(-5px); border-color: var(--blue); }
+
+        .post-header {
+            padding: 12px 16px; background: var(--surface2);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .keyword-tag { background: var(--blue-glow); color: var(--blue); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 5px; }
+
+        .telegram-widget-container { min-height: 150px; padding: 10px; }
+
+        .theme-toggle {
+            background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer;
+        }
+
+        #loading { text-align: center; padding: 50px; color: var(--text-muted); }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #paginationUI { display: flex; justify-content: center; gap: 15px; padding: 30px; }
+        .pg-btn { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; }
+        .pg-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            .radar-grid { grid-template-columns: 1fr; }
+            .controls-row { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
 
-<div id="loading"><h1>جاري تحميل الرادار...</h1></div>
-
-<div class="sidebar">
-    <div class="search-area">
-        <div style="margin-bottom:8px;">📡 Signa</div>
-        <input type="text" id="search" placeholder="بحث..." onkeyup="search()">
+<header>
+    <div class="header-inner">
+        <div class="header-top">
+            <div class="logo">
+                <div class="logo-icon">📡</div>
+                <span class="logo-text">MoFlow Radar</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span style="font-size:12px; color:var(--green)">● LIVE</span>
+                <button class="theme-toggle" id="themeToggle">🌓</button>
+            </div>
+        </div>
+        <div class="controls-row">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="ابحث عن كلمة مفتاحية أو قناة...">
+            </div>
+            <select id="sortSelect" class="sort-select">
+                <option value="newest">الأحدث أولاً</option>
+                <option value="random">عشوائي</option>
+            </select>
+        </div>
     </div>
-    <div id="list" class="channel-list"></div>
+</header>
+
+<div id="statsBar" style="max-width:1400px; margin: 15px auto; padding: 0 24px; font-size: 13px; color: var(--text-muted);">
+    جاري تحميل البيانات...
 </div>
 
-<div class="main-view">
-    <div id="timeline" class="timeline">
-        <h2 style="color:#999; margin-top:100px;">اختر قناة لمشاهدة التايم لاين</h2>
-    </div>
-</div>
+<div id="loading"><div class="spinner"></div>جاري جلب الرادار...</div>
+<div id="radarGrid" class="radar-grid"></div>
+<div id="paginationUI"></div>
 
 <script>
     const CSV_URL = 'https://raw.githubusercontent.com/moflow00/Signal-X/main/telegram_data.csv';
-    let data = [];
+    let allData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const POSTS_PER_PAGE = 24;
+
+    // --- Theme Logic ---
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+        const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('radar-theme', theme);
+    });
+    if(localStorage.getItem('radar-theme')) document.documentElement.setAttribute('data-theme', localStorage.getItem('radar-theme'));
 
     async function init() {
         try {
@@ -47,54 +176,116 @@
             const text = await res.text();
             Papa.parse(text, {
                 header: true,
-                complete: (r) => {
-                    data = r.data.filter(d => d.Link);
+                skipEmptyLines: true,
+                complete: (results) => {
+                    allData = results.data.filter(d => d.Link && d.LatestID && d.LatestID !== "None");
+                    filteredData = [...allData];
                     document.getElementById('loading').style.display = 'none';
-                    renderList(data);
+                    render();
                 }
             });
-        } catch(e) { alert("خطأ في جلب البيانات. تأكد من رابط الـ CSV واسم الـ Repo الجديد."); }
+        } catch(e) { 
+            document.getElementById('loading').innerHTML = "⚠️ خطأ في تحميل البيانات";
+        }
     }
 
-    function renderList(arr) {
-        const list = document.getElementById('list');
-        list.innerHTML = arr.slice(0, 100).map(item => `
-            <div class="channel-item" onclick="show('${item.Link}', '${item.LatestID}')">
-                <strong>${item.Channel_Name || 'قناة'}</strong><br>
-                <small>${item.Keyword} | @${item.Link.split('/').pop()}</small>
-            </div>
-        `).join('');
-    }
-
-    function show(link, latestId) {
-        const username = link.split('/').pop();
-        const container = document.getElementById('timeline');
-        container.innerHTML = '';
+    function render() {
+        const grid = document.getElementById('radarGrid');
+        grid.innerHTML = '';
         
-        if (!latestId || latestId === "None" || latestId === "undefined") {
-            container.innerHTML = '<p>جاري انتظار الـ ID Hunter لتحديث هذه القناة...</p>';
-            return;
-        }
+        let allPosts = [];
+        const sortVal = document.getElementById('sortSelect').value;
 
-        for (let i = 0; i < 30; i++) {
-            const id = parseInt(latestId) - i;
-            if (id <= 0) break;
-            const box = document.createElement('div');
-            box.className = 'post-box';
-            container.appendChild(box);
-            const s = document.createElement('script');
-            s.async = true; s.src = "https://telegram.org/js/telegram-widget.js?22";
-            s.setAttribute("data-telegram-post", `${username}/${id}`);
-            s.setAttribute("data-width", "100%");
-            box.appendChild(s);
-        }
+        filteredData.forEach(item => {
+            const username = item.Link.split('/').pop();
+            const latestId = parseInt(item.LatestID);
+            // نأخذ آخر منشورين من كل قناة لضمان التنوع في الصفحة الواحدة
+            for(let i=0; i<2; i++) {
+                if(latestId - i > 0) {
+                    allPosts.push({ ...item, username, currentId: latestId - i });
+                }
+            }
+        });
+
+        if(sortVal === 'random') allPosts.sort(() => Math.random() - 0.5);
+        else allPosts.sort((a, b) => b.currentId - a.currentId);
+
+        const start = (currentPage - 1) * POSTS_PER_PAGE;
+        const pageItems = allPosts.slice(start, start + POSTS_PER_PAGE);
+
+        document.getElementById('statsBar').innerHTML = `عرض <b>${allPosts.length}</b> منشور متاح حالياً`;
+
+        pageItems.forEach(post => {
+            const card = document.createElement('div');
+            card.className = 'post-card';
+            card.innerHTML = `
+                <div class="post-header">
+                    <span class="keyword-tag">#${post.Keyword || 'عام'}</span>
+                    <span style="font-size:12px; font-weight:600;">@${post.username}</span>
+                </div>
+                <div class="telegram-widget-container" data-user="${post.username}" data-id="${post.currentId}">
+                    <div style="height:150px; background:var(--surface2); border-radius:8px; animate:pulse 1s infinite;"></div>
+                </div>
+                <div style="padding:10px 16px; border-top:1px solid var(--border-soft);">
+                    <a href="https://t.me/${post.username}/${post.currentId}" target="_blank" style="color:var(--blue); text-decoration:none; font-size:12px;">فتح في تيليجرام ←</a>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        renderPagination(allPosts.length);
+        loadWidgets();
     }
 
-    function search() {
-        const term = document.getElementById('search').value.toLowerCase();
-        const filtered = data.filter(d => (d.Keyword + d.Link).toLowerCase().includes(term));
-        renderList(filtered);
+    function loadWidgets() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    const el = entry.target;
+                    const s = document.createElement('script');
+                    s.async = true;
+                    s.src = "https://telegram.org/js/telegram-widget.js?22";
+                    s.setAttribute("data-telegram-post", `${el.dataset.user}/${el.dataset.id}`);
+                    s.setAttribute("data-width", "100%");
+                    if(document.documentElement.getAttribute('data-theme') !== 'light') s.setAttribute("data-dark", "1");
+                    el.innerHTML = '';
+                    el.appendChild(s);
+                    observer.unobserve(el);
+                }
+            });
+        }, { rootMargin: '200px' });
+        document.querySelectorAll('.telegram-widget-container').forEach(d => observer.observe(d));
     }
+
+    function renderPagination(total) {
+        const totalPages = Math.ceil(total / POSTS_PER_PAGE);
+        const container = document.getElementById('paginationUI');
+        container.innerHTML = `
+            <button class="pg-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>السابق</button>
+            <span style="align-self:center">صفحة ${currentPage} من ${totalPages}</span>
+            <button class="pg-btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>التالي</button>
+        `;
+    }
+
+    function changePage(step) {
+        currentPage += step;
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        filteredData = allData.filter(d => 
+            (d.Keyword + d.Channel_Name + d.Link).toLowerCase().includes(term)
+        );
+        currentPage = 1;
+        render();
+    });
+
+    document.getElementById('sortSelect').addEventListener('change', () => {
+        currentPage = 1;
+        render();
+    });
 
     init();
 </script>
