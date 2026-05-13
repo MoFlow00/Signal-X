@@ -1,315 +1,136 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>رادار تليجرام</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رادار تليجرام - التايم لاين المباشر</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        :root {
-            --tg-blue: #0088cc;
-            --bg: #e7ebf0;
-            --card: #ffffff;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --line: #e5e7eb;
-        }
+        :root { --tg-blue: #0088cc; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+        .header { text-align: center; background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: #fff; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-height: 400px; }
+        .card-header { padding: 12px; background: var(--tg-blue); color: #fff; font-weight: bold; display: flex; justify-content: space-between; }
+        
+        /* تصميم المنشور */
+        .post-feed { flex: 1; padding: 15px; overflow-y: auto; max-height: 500px; background: #fff; border-bottom: 1px solid #eee; }
+        .post-item { border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 15px; }
+        .post-item:last-child { border: none; }
+        .post-text { font-size: 14px; line-height: 1.6; color: #333; white-space: pre-wrap; }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; display: block; }
+        .post-date { font-size: 11px; color: #999; margin-top: 5px; }
 
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            padding: 12px;
-            font-family: Tahoma, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        .header {
-            text-align: center;
-            background: #fff;
-            padding: 20px;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,.08);
-        }
-
-        .header h1 {
-            margin: 0 0 14px;
-            font-size: 28px;
-        }
-
-        #search {
-            width: min(90%, 850px);
-            padding: 12px 16px;
-            border-radius: 25px;
-            border: 1px solid #d1d5db;
-            outline: none;
-            font-size: 15px;
-        }
-
-        .pagination {
-            text-align: center;
-            margin: 18px 0;
-        }
-
-        button {
-            padding: 10px 25px;
-            border-radius: 20px;
-            border: none;
-            background: var(--tg-blue);
-            color: #fff;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        #pageInfo {
-            margin: 0 15px;
-            font-weight: bold;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            overflow: hidden;
-            min-height: 320px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 15px rgba(0,0,0,.08);
-        }
-
-        .card-header {
-            padding: 10px 12px;
-            background: var(--tg-blue);
-            color: #fff;
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            font-size: 12px;
-        }
-
-        .card-header span {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .post-body {
-            flex: 1;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            justify-content: center;
-            background: #f8fafc;
-        }
-
-        .info-box {
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 12px;
-            line-height: 1.8;
-            font-size: 14px;
-        }
-
-        .label {
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .value {
-            color: var(--text);
-            font-weight: bold;
-            word-break: break-word;
-        }
-
-        .notice {
-            background: #fff7ed;
-            color: #9a3412;
-            border: 1px solid #fdba74;
-            border-radius: 12px;
-            padding: 12px;
-            font-size: 13px;
-            line-height: 1.9;
-        }
-
-        .card-footer {
-            padding: 12px;
-            border-top: 1px solid var(--line);
-            text-align: center;
-        }
-
-        .card-footer a {
-            color: var(--tg-blue);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .empty {
-            text-align: center;
-            color: var(--muted);
-            padding: 40px 20px;
-            background: #fff;
-            border-radius: 16px;
-        }
+        .loader { text-align: center; color: #888; padding: 20px; font-size: 14px; }
+        .pagination { text-align: center; margin: 20px; }
+        button { padding: 10px 25px; border-radius: 25px; border: none; background: var(--tg-blue); color: #fff; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>📡 رادار تليجرام</h1>
-        <input type="text" id="search" placeholder="ابحث في القنوات أو الكلمات المفتاحية..." />
+        <h1>📡 رادار التايم لاين (Native View)</h1>
+        <input type="text" id="search" placeholder="ابحث في القنوات..." style="padding:12px; width:80%; border-radius:25px; border:1px solid #ddd; outline:none; text-align:center;">
     </div>
 
     <div class="pagination">
-        <button id="prev" onclick="changePage(-1)">السابق</button>
-        <span id="pageInfo"></span>
-        <button id="next" onclick="changePage(1)">التالي</button>
+        <button onclick="changePage(-1)">السابق</button>
+        <span id="pageInfo" style="margin: 0 15px; font-weight: bold;"></span>
+        <button onclick="changePage(1)">التالي</button>
     </div>
 
     <div id="wrapper" class="grid"></div>
 
     <script>
         const CSV_URL = 'https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv';
-
         let allData = [];
-        let filteredData = [];
         let currentPage = 0;
-        const pageSize = 12;
+        const pageSize = 9; // عدد القنوات في الصفحة
 
         async function init() {
+            const res = await fetch(CSV_URL);
+            const text = await res.text();
+            Papa.parse(text, {
+                header: true,
+                complete: (results) => {
+                    allData = results.data.filter(d => d.Link && !d.Link.includes('+'));
+                    render();
+                }
+            });
+        }
+
+        // دالة سحب التايم لاين وتحويله لـ HTML
+        async function loadTimeline(username, elementId) {
+            const container = document.getElementById(elementId);
             try {
-                const res = await fetch(CSV_URL);
-                if (!res.ok) throw new Error('CSV load failed');
+                // نستخدم خدمة AllOrigins للالتفاف على الـ CORS و RSS Bridge لجلب الداتا
+                const rssUrl = `https://tg.i-c-a.su/rss/${username}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`;
+                
+                const res = await fetch(proxyUrl);
+                const data = await res.json();
+                
+                // تحويل الـ XML لـ JSON بسيط
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const items = xmlDoc.querySelectorAll("item");
 
-                const text = await res.text();
-
-                Papa.parse(text, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        allData = (results.data || []).filter(row => row.Link && row.Link.includes('t.me/'));
-                        filteredData = [...allData];
-                        render();
-                    },
-                    error: () => {
-                        document.getElementById('wrapper').innerHTML =
-                            '<div class="empty">فشل في قراءة ملف CSV</div>';
-                    }
-                });
+                if (items.length > 0) {
+                    container.innerHTML = '';
+                    // عرض آخر 3 منشورات فقط لكل قناة لسرعة التحميل
+                    Array.from(items).slice(0, 3).forEach(item => {
+                        const title = item.querySelector("title")?.textContent || "";
+                        const desc = item.querySelector("description")?.textContent || "";
+                        const date = new Date(item.querySelector("pubDate")?.textContent).toLocaleString('ar-EG');
+                        
+                        // تنظيف الصور وتجهيزها للعرض
+                        const div = document.createElement('div');
+                        div.className = 'post-item';
+                        div.innerHTML = `
+                            <div class="post-text">${desc}</div>
+                            <div class="post-date">${date}</div>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else {
+                    container.innerHTML = '<div class="loader">لا يوجد منشورات عامة متاحة</div>';
+                }
             } catch (e) {
-                document.getElementById('wrapper').innerHTML =
-                    '<div class="empty">فشل في تحميل ملف القنوات</div>';
-                console.error(e);
+                container.innerHTML = '<div class="loader">عذراً، فشل الاتصال بالقناة</div>';
             }
         }
 
         function render() {
             const wrapper = document.getElementById('wrapper');
             wrapper.innerHTML = '';
+            const slice = allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
-            const start = currentPage * pageSize;
-            const end = start + pageSize;
-            const slice = filteredData.slice(start, end);
-
-            if (!slice.length) {
-                wrapper.innerHTML = '<div class="empty">لا توجد نتائج</div>';
-                updatePagination();
-                return;
-            }
-
-            slice.forEach((item) => {
-                const keyword = item.Keyword || '-';
-                const channelName = item['Channel Name'] || item.Channel || item.Name || '-';
-                const link = item.Link || '#';
-                const subscribers = item.Subscribers || 'N/A';
-
+            slice.forEach((item, index) => {
+                const username = item.Link.split('t.me/')[1].split('/')[0].split('?')[0];
+                const feedId = `feed-${index}`;
+                
                 const card = document.createElement('div');
                 card.className = 'card';
-
                 card.innerHTML = `
                     <div class="card-header">
-                        <span title="${keyword}"># ${keyword}</span>
-                        <span title="${subscribers}">👥 ${subscribers}</span>
+                        <span># ${item.Keyword}</span>
+                        <span style="font-size:10px;">${item.Subscribers}</span>
                     </div>
-
-                    <div class="post-body">
-                        <div class="info-box">
-                            <div class="label">اسم القناة</div>
-                            <div class="value">${channelName}</div>
-                        </div>
-
-                        <div class="info-box">
-                            <div class="label">الرابط</div>
-                            <div class="value">${link}</div>
-                        </div>
-
-                        <div class="notice">
-                            لا يمكن عرض آخر منشور تلقائيًا من هذا الملف لأن البيانات الحالية لا تحتوي على MessageID.
-                        </div>
+                    <div class="post-feed" id="${feedId}">
+                        <div class="loader">جاري سحب التايم لاين...</div>
                     </div>
-
-                    <div class="card-footer">
-                        <a href="${link}" target="_blank" rel="noopener noreferrer">فتح القناة 🚀</a>
+                    <div style="padding:10px; text-align:center;">
+                        <a href="${item.Link}" target="_blank" style="color:var(--tg-blue); text-decoration:none; font-size:12px; font-weight:bold;">رابط القناة 📡</a>
                     </div>
                 `;
-
                 wrapper.appendChild(card);
+                loadTimeline(username, feedId);
             });
 
-            updatePagination();
+            document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1}`;
         }
 
-        function updatePagination() {
-            const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
-            document.getElementById('pageInfo').innerText = `صفحة ${currentPage + 1} من ${totalPages}`;
-            document.getElementById('prev').disabled = currentPage === 0;
-            document.getElementById('next').disabled = currentPage >= totalPages - 1;
-        }
-
-        function changePage(step) {
-            const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
-            currentPage += step;
-
-            if (currentPage < 0) currentPage = 0;
-            if (currentPage > totalPages - 1) currentPage = totalPages - 1;
-
-            render();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        document.getElementById('search').addEventListener('input', function () {
-            const q = this.value.trim().toLowerCase();
-
-            filteredData = allData.filter(item => {
-                const keyword = String(item.Keyword || '').toLowerCase();
-                const channelName = String(item['Channel Name'] || item.Channel || item.Name || '').toLowerCase();
-                const link = String(item.Link || '').toLowerCase();
-                const subscribers = String(item.Subscribers || '').toLowerCase();
-
-                return keyword.includes(q) ||
-                       channelName.includes(q) ||
-                       link.includes(q) ||
-                       subscribers.includes(q);
-            });
-
-            currentPage = 0;
-            render();
-        });
-
+        function changePage(step) { currentPage += step; render(); window.scrollTo(0,0); }
         init();
     </script>
 </body>
