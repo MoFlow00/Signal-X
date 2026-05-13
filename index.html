@@ -624,9 +624,21 @@ function lazyLoadWidgets() {
       if(currentTheme === 'dark') script.setAttribute('data-dark', '1');
       
       el.appendChild(script);
-      observer.unobserve(el);
-    });
-  }, { rootMargin: '400px' });
+
+setTimeout(() => {
+  const iframe = el.querySelector('iframe');
+
+  // لو الويدجت محملش
+  if (!iframe || iframe.offsetHeight < 120) {
+    const card = el.closest('.post-card');
+    if (card) {
+      card.remove();
+    }
+  }
+}, 7000);
+
+observer.unobserve(el);
+  }, { rootMargin: '100px' });
 
   document.querySelectorAll('.telegram-widget-container').forEach(el => observer.observe(el));
 }
