@@ -1,1092 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
 <title>Signal-X</title>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-
 <style>
-
-:root{
-
-  --bg:#0d1117;
-  --surface:#161b22;
-  --surface2:#21262d;
-  --surface3:#30363d;
-
-  --blue:#0ea5e9;
-  --blue-glow:rgba(14,165,233,.12);
-
-  --text:#e6edf3;
-  --text-muted:#8b949e;
-
-  --border:rgba(240,246,252,.1);
-  --border-soft:rgba(240,246,252,.06);
-
-}
-
-[data-theme="light"]{
-
-  --bg:#f6f8fa;
-  --surface:#ffffff;
-  --surface2:#f0f2f5;
-  --surface3:#e1e4e8;
-
-  --blue:#0969da;
-  --blue-glow:rgba(9,105,218,.08);
-
-  --text:#1f2328;
-  --text-muted:#57606a;
-
-  --border:rgba(31,35,40,.12);
-  --border-soft:rgba(31,35,40,.06);
-
-}
-
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
-
-body{
-
-  font-family:'Inter',sans-serif;
-
-  background:var(--bg);
-  color:var(--text);
-
-  min-height:100vh;
-
-  transition:.25s;
-
-}
-
-/* HEADER */
-
-header{
-
-  position:sticky;
-  top:0;
-
-  z-index:999;
-
-  background:rgba(13,17,23,.92);
-
-  backdrop-filter:blur(18px);
-
-  border-bottom:1px solid var(--border);
-
-}
-
-[data-theme="light"] header{
-  background:rgba(255,255,255,.9);
-}
-
-.header-inner{
-
-  max-width:1600px;
-
-  margin:auto;
-
-  padding:20px 24px;
-
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-
-}
-
-.header-top{
-
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-
-}
-
-.logo{
-
-  display:flex;
-  align-items:center;
-  gap:14px;
-
-}
-
-.logo-icon{
-
-  width:46px;
-  height:46px;
-
-  border-radius:14px;
-
-  background:linear-gradient(135deg,#0ea5e9,#2563eb);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  font-size:22px;
-
-  box-shadow:0 10px 30px rgba(14,165,233,.25);
-
-}
-
-.logo-text{
-
-  font-size:24px;
-  font-weight:700;
-
-}
-
-.theme-toggle{
-
-  width:44px;
-  height:44px;
-
-  border:none;
-  cursor:pointer;
-
-  border-radius:12px;
-
-  background:var(--surface2);
-  color:var(--text);
-
-  font-size:18px;
-
-  transition:.2s;
-
-}
-
-.theme-toggle:hover{
-
-  background:var(--surface3);
-
-}
-
-/* CONTROLS */
-
-.controls{
-
-  display:flex;
-  gap:14px;
-
-  flex-wrap:wrap;
-
-}
-
-.search-wrapper{
-
-  flex:1;
-  position:relative;
-
-}
-
-.search-icon{
-
-  position:absolute;
-
-  left:16px;
-  top:50%;
-
-  transform:translateY(-50%);
-
-  color:var(--text-muted);
-
-}
-
-#searchInput{
-
-  width:100%;
-
-  padding:15px 18px 15px 46px;
-
-  background:var(--surface2);
-
-  border:1px solid var(--border);
-
-  border-radius:18px;
-
-  color:var(--text);
-
-  font-size:15px;
-
-  outline:none;
-
-}
-
-#searchInput:focus{
-
-  border-color:rgba(14,165,233,.4);
-
-  box-shadow:0 0 0 4px var(--blue-glow);
-
-}
-
-.sort-select{
-
-  min-width:180px;
-
-  padding:0 14px;
-
-  border-radius:18px;
-
-  border:1px solid var(--border);
-
-  background:var(--surface2);
-
-  color:var(--text);
-
-  outline:none;
-
-}
-
-/* STATS */
-
-.controls-bar{
-
-  max-width:1600px;
-
-  margin:22px auto 0;
-
-  padding:0 24px;
-
-}
-
-.stats-pill{
-
-  display:inline-flex;
-  align-items:center;
-
-  background:var(--surface);
-
-  border:1px solid var(--border);
-
-  border-radius:999px;
-
-  padding:10px 16px;
-
-  color:var(--text-muted);
-
-  font-size:13px;
-
-}
-
-/* GRID */
-
-.radar-grid{
-
-  max-width:1600px;
-
-  margin:auto;
-
-  padding:24px;
-
-  display:grid;
-
-  grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
-
-  gap:18px;
-
-}
-
-/* CARD */
-
-.post-card{
-
-  background:var(--surface);
-
-  border:1px solid var(--border);
-
-  border-radius:24px;
-
-  overflow:hidden;
-
-  transition:.25s;
-
-  animation:fadeUp .3s ease;
-
-}
-
-.post-card:hover{
-
-  transform:translateY(-3px);
-
-  border-color:rgba(14,165,233,.3);
-
-  box-shadow:0 14px 40px rgba(0,0,0,.18);
-
-}
-
-@keyframes fadeUp{
-
-  from{
-    opacity:0;
-    transform:translateY(10px);
-  }
-
-  to{
-    opacity:1;
-    transform:translateY(0);
-  }
-
-}
-
-.post-header{
-
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-
-  padding:14px 16px;
-
-  background:var(--surface2);
-
-  border-bottom:1px solid var(--border-soft);
-
-}
-
-.keyword-tag{
-
-  background:var(--blue-glow);
-
-  color:var(--blue);
-
-  border:1px solid rgba(14,165,233,.25);
-
-  font-size:12px;
-  font-weight:700;
-
-  padding:6px 12px;
-
-  border-radius:999px;
-
-}
-
-.channel-tag{
-
-  background:rgba(139,148,158,.08);
-
-  border:1px solid var(--border);
-
-  color:var(--text-muted);
-
-  font-size:12px;
-
-  padding:6px 12px;
-
-  border-radius:999px;
-
-}
-
-.telegram-widget-container{
-
-  min-height:180px;
-
-  padding:14px;
-
-}
-
-.widget-skeleton{
-
-  height:150px;
-
-  border-radius:18px;
-
-  background:linear-gradient(
-    90deg,
-    var(--surface2) 25%,
-    var(--surface3) 50%,
-    var(--surface2) 75%
-  );
-
-  background-size:200% 100%;
-
-  animation:shimmer 1.5s infinite;
-
-}
-
-@keyframes shimmer{
-
-  0%{
-    background-position:200% 0;
-  }
-
-  100%{
-    background-position:-200% 0;
-  }
-
-}
-
-.post-footer{
-
-  padding:14px 16px;
-
-  border-top:1px solid var(--border-soft);
-
-}
-
-.open-btn{
-
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-
-  text-decoration:none;
-
-  background:var(--blue-glow);
-
-  color:var(--blue);
-
-  border:1px solid rgba(14,165,233,.25);
-
-  padding:10px 16px;
-
-  border-radius:14px;
-
-  font-size:13px;
-  font-weight:700;
-
-}
-
-.open-btn:hover{
-
-  background:rgba(14,165,233,.18);
-
-}
-
-/* PAGINATION */
-
-#paginationUI{
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:12px;
-
-  padding:30px;
-
-}
-
-.pg-btn{
-
-  background:var(--surface2);
-
-  border:1px solid var(--border);
-
-  color:var(--text);
-
-  padding:12px 22px;
-
-  border-radius:14px;
-
-  cursor:pointer;
-
-}
-
-.pg-btn:hover:not(:disabled){
-
-  background:var(--surface3);
-
-}
-
-.pg-btn:disabled{
-
-  opacity:.4;
-  cursor:not-allowed;
-
-}
-
-/* LOADING */
-
-#loading{
-
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-
-  gap:16px;
-
-  padding:80px 20px;
-
-  color:var(--text-muted);
-
-}
-
-.spinner{
-
-  width:42px;
-  height:42px;
-
-  border-radius:50%;
-
-  border:3px solid var(--border);
-
-  border-top-color:var(--blue);
-
-  animation:spin .7s linear infinite;
-
-}
-
-@keyframes spin{
-  to{
-    transform:rotate(360deg);
-  }
-}
-
-.empty-state{
-
-  text-align:center;
-
-  padding:80px 20px;
-
-  color:var(--text-muted);
-
-}
-
-@media(max-width:768px){
-
-  .radar-grid{
-    grid-template-columns:1fr;
-  }
-
-  .controls{
-    flex-direction:column;
-  }
-
-}
-
+:root{ --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --surface3:#30363d; --blue:#0ea5e9; --blue-glow:rgba(14,165,233,.12); --text:#e6edf3; --text-muted:#8b949e; --border:rgba(240,246,252,.1); --border-soft:rgba(240,246,252,.06); }
+[data-theme="light"]{ --bg:#f6f8fa; --surface:#ffffff; --surface2:#f0f2f5; --surface3:#e1e4e8; --blue:#0969da; --blue-glow:rgba(9,105,218,.08); --text:#1f2328; --text-muted:#57606a; --border:rgba(31,35,40,.12); --border-soft:rgba(31,35,40,.06); }
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition:.25s; }
+header{ position:sticky; top:0; z-index:999; background:rgba(13,17,23,.92); backdrop-filter:blur(18px); border-bottom:1px solid var(--border); }
+[data-theme="light"] header{ background:rgba(255,255,255,.9); }
+.header-inner{ max-width:1600px; margin:auto; padding:20px 24px; display:flex; flex-direction:column; gap:18px; }
+.header-top{ display:flex; align-items:center; justify-content:space-between; }
+.logo{ display:flex; align-items:center; gap:14px; }
+.logo-icon{ width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,#0ea5e9,#2563eb); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 10px 30px rgba(14,165,233,.25); }
+.logo-text{ font-size:24px; font-weight:700; }
+.theme-toggle{ width:44px; height:44px; border:none; cursor:pointer; border-radius:12px; background:var(--surface2); color:var(--text); font-size:18px; transition:.2s; }
+.theme-toggle:hover{ background:var(--surface3); }
+.controls{ display:flex; gap:14px; flex-wrap:wrap; }
+.search-wrapper{ flex:1; position:relative; }
+.search-icon{ position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--text-muted); }
+#searchInput{ width:100%; padding:15px 18px 15px 46px; background:var(--surface2); border:1px solid var(--border); border-radius:18px; color:var(--text); font-size:15px; outline:none; }
+#searchInput:focus{ border-color:rgba(14,165,233,.4); box-shadow:0 0 0 4px var(--blue-glow); }
+.sort-select{ min-width:180px; padding:0 14px; border-radius:18px; border:1px solid var(--border); background:var(--surface2); color:var(--text); outline:none; }
+.controls-bar{ max-width:1600px; margin:22px auto 0; padding:0 24px; }
+.stats-pill{ display:inline-flex; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:10px 16px; color:var(--text-muted); font-size:13px; }
+.radar-grid{ max-width:1600px; margin:auto; padding:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); gap:18px; }
+.post-card{ background:var(--surface); border:1px solid var(--border); border-radius:24px; overflow:hidden; transition:.25s; animation:fadeUp .3s ease; }
+.post-card:hover{ transform:translateY(-3px); border-color:rgba(14,165,233,.3); box-shadow:0 14px 40px rgba(0,0,0,.18); }
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+.post-header{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--surface2); border-bottom:1px solid var(--border-soft); }
+.keyword-tag{ background:var(--blue-glow); color:var(--blue); border:1px solid rgba(14,165,233,.25); font-size:12px; font-weight:700; padding:6px 12px; border-radius:999px; }
+.channel-tag{ background:rgba(133,148,158,.08); border:1px solid var(--border); color:var(--text-muted); font-size:12px; padding:6px 12px; border-radius:999px; }
+.telegram-widget-container{ min-height:180px; padding:14px; }
+.widget-skeleton{ height:150px; border-radius:18px; background:linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
+@keyframes shimmer{ 0%{ background-position:200% 0; } 100%{ background-position:-200% 0; } }
+.post-footer{ padding:14px 16px; border-top:1px solid var(--border-soft); }
+.open-btn{ display:inline-flex; align-items:center; gap:8px; text-decoration:none; background:var(--blue-glow); color:var(--blue); border:1px solid rgba(14,165,233,.25); padding:10px 16px; border-radius:14px; font-size:13px; font-weight:700; }
+.open-btn:hover{ background:rgba(14,165,233,.18); }
+#paginationUI{ display:flex; justify-content:center; align-items:center; gap:12px; padding:30px; }
+.pg-btn{ background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:12px 22px; border-radius:14px; cursor:pointer; }
+.pg-btn:hover:not(:disabled){ background:var(--surface3); }
+.pg-btn:disabled{ opacity:.4; cursor:not-allowed; }
+#loading{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:80px 20px; color:var(--text-muted); }
+.spinner{ width:42px; height:42px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--blue); animation:spin .7s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.empty-state{ text-align:center; padding:80px 20px; color:var(--text-muted); }
+@media(max-width:768px){ .radar-grid{ grid-template-columns:1fr; } .controls{ flex-direction:column; } }
 </style>
-
 </head>
-
 <body>
-
 <header>
-
   <div class="header-inner">
-
     <div class="header-top">
-
       <div class="logo">
-
         <div class="logo-icon">📡</div>
-
         <div class="logo-text">Signal-X</div>
-
       </div>
-
-      <button class="theme-toggle" id="themeToggle">
-        🌓
-      </button>
-
+      <button class="theme-toggle" id="themeToggle">🌓</button>
     </div>
-
     <div class="controls">
-
       <div class="search-wrapper">
-
         <span class="search-icon">🔍</span>
-
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="Search channels or keywords"
-        />
-
+        <input type="text" id="searchInput" placeholder="Search channels or keywords"/>
       </div>
-
       <select class="sort-select" id="sortSelect">
-
         <option value="random">Random</option>
-
         <option value="newest">Newest First</option>
-
       </select>
-
     </div>
-
   </div>
-
 </header>
-
 <div class="controls-bar">
-
-  <div class="stats-pill" id="statsDisplay">
-    Loading...
-  </div>
-
+  <div class="stats-pill" id="statsDisplay">Loading...</div>
 </div>
-
 <div id="loading">
-
   <div class="spinner"></div>
-
   <span>Loading data...</span>
-
 </div>
-
 <div class="radar-grid" id="radarGrid"></div>
-
 <div id="paginationUI"></div>
 
 <script>
+const CSV_URL = 'https://raw.githubusercontent.com/moflow00/Signal-X/main/telegram_data.csv';
 
-const CSV_URL =
-'https://raw.githubusercontent.com/moflow00/Signal-X/main/telegram_data.csv';
+// الكلمات المحظورة (تتم تصفية القناة إذا وجدت في الاسم أو الكلمة المفتاحية)
+const BLACKLIST = ['sex', 'porn', 'اباحي', 'سكس', '18+', 'نودز'];
 
 let allData = [];
 let filteredData = [];
-
 let currentPage = 1;
 let currentSort = 'random';
-
 const POSTS_PER_PAGE = 100;
 
-/* THEME */
-
-const themeToggle =
-document.getElementById('themeToggle');
-
-themeToggle.addEventListener('click',()=>{
-
-  const currentTheme =
-  document.documentElement.getAttribute('data-theme');
-
-  const newTheme =
-  currentTheme === 'light' ? 'dark' : 'light';
-
-  document.documentElement.setAttribute(
-    'data-theme',
-    newTheme
-  );
-
-  localStorage.setItem('theme',newTheme);
-
-});
-
-const savedTheme =
-localStorage.getItem('theme') || 'dark';
-
-document.documentElement.setAttribute(
-  'data-theme',
-  savedTheme
-);
-
-/* INIT */
-
-async function initRadar(){
-
-  try{
-
-    const response = await fetch(CSV_URL);
-
-    const csvText = await response.text();
-
-    Papa.parse(csvText,{
-
-      header:true,
-      skipEmptyLines:true,
-
-      complete:(results)=>{
-
-        allData = results.data.filter(row=>{
-
-          const latestId =
-          String(row.LatestID || '').trim();
-
-          return(
-
-            row.Link &&
-
-            latestId &&
-
-            latestId !== 'None' &&
-            latestId !== 'undefined' &&
-            latestId !== 'NaN' &&
-
-            !isNaN(parseInt(latestId))
-
-          );
-
-        });
-
-        filteredData = [...allData];
-
-        document.getElementById('loading').style.display =
-        'none';
-
-        renderPosts();
-
-      }
-
-    });
-
-  }catch(err){
-
-    console.error(err);
-
-    document.getElementById('loading').innerHTML = `
-      <div class="empty-state">
-        <h2>Failed to load data</h2>
-      </div>
-    `;
-
-  }
-
+// تصفية اللغات (عربي وإنجليزي فقط)
+function isValidLanguage(text) {
+    if (!text) return true;
+    // Regex matches English chars, Arabic chars, numbers and common symbols
+    const combinedRegex = /^[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z0-9\s.,!@#$%^&*()_+-=\[\]{};':"\\|,.<>\/?]+$/;
+    return combinedRegex.test(text);
 }
 
-/* RENDER */
+// تصفية الكلمات المحظورة
+function isSafe(text) {
+    if (!text) return true;
+    const lowerText = text.toLowerCase();
+    return !BLACKLIST.some(word => lowerText.includes(word.toLowerCase()));
+}
+
+async function initRadar(){
+  try{
+    const response = await fetch(CSV_URL);
+    const csvText = await response.text();
+    Papa.parse(csvText,{
+      header:true,
+      skipEmptyLines:true,
+      complete:(results)=>{
+        allData = results.data.filter(row=>{
+          const latestId = String(row.LatestID || '').trim();
+          const channelName = row['Channel Name'] || '';
+          const keyword = row.Keyword || '';
+
+          return(
+            row.Link &&
+            latestId && latestId !== 'None' && !isNaN(parseInt(latestId)) &&
+            isValidLanguage(channelName) && isValidLanguage(keyword) &&
+            isSafe(channelName) && isSafe(keyword)
+          );
+        });
+        filteredData = [...allData];
+        document.getElementById('loading').style.display = 'none';
+        renderPosts();
+      }
+    });
+  }catch(err){
+    document.getElementById('loading').innerHTML = `<div class="empty-state"><h2>Failed to load data</h2></div>`;
+  }
+}
 
 function renderPosts(){
-
-  const grid =
-  document.getElementById('radarGrid');
-
+  const grid = document.getElementById('radarGrid');
   grid.innerHTML = '';
-
   let allPosts = [];
-
   filteredData.forEach(item=>{
-
     try{
-
-      const username =
-      item.Link.split('t.me/')[1].split('/')[0];
-
-      const latestId =
-      parseInt(item.LatestID);
-
-      /* LAST 20 POSTS */
-
-      for(let i=0;i<20;i++){
-
+      const username = item.Link.split('t.me/')[1].split('/')[0];
+      const latestId = parseInt(item.LatestID);
+      for(let i=0;i<15;i++){
         const msgId = latestId - i;
-
         if(msgId <= 0) break;
-
-        allPosts.push({
-
-          username,
-          msgId,
-          keyword:item.Keyword || 'General'
-
-        });
-
+        allPosts.push({ username, msgId, keyword:item.Keyword || 'General' });
       }
-
     }catch(e){}
-
   });
 
-  /* SORT */
+  if(currentSort === 'random') allPosts.sort(()=>Math.random() - 0.5);
+  else allPosts.sort((a,b)=>b.msgId - a.msgId);
 
-  if(currentSort === 'random'){
-
-    allPosts.sort(()=>Math.random() - 0.5);
-
-  }else{
-
-    allPosts.sort((a,b)=>b.msgId - a.msgId);
-
-  }
-
-  const start =
-  (currentPage - 1) * POSTS_PER_PAGE;
-
-  const end =
-  start + POSTS_PER_PAGE;
-
-  const currentPosts =
-  allPosts.slice(start,end);
+  const start = (currentPage - 1) * POSTS_PER_PAGE;
+  const currentPosts = allPosts.slice(start, start + POSTS_PER_PAGE);
 
   if(currentPosts.length === 0){
-
-    grid.innerHTML = `
-      <div class="empty-state"
-      style="grid-column:1/-1">
-
-        <h2>No results found</h2>
-
-      </div>
-    `;
-
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><h2>No results found</h2></div>`;
     return;
-
   }
 
   currentPosts.forEach((post,index)=>{
-
-    const card =
-    document.createElement('div');
-
+    const card = document.createElement('div');
     card.className = 'post-card';
-
-    card.style.animationDelay =
-    (index * 15) + 'ms';
-
+    card.style.animationDelay = (index * 15) + 'ms';
     card.innerHTML = `
-
       <div class="post-header">
-
-        <span class="keyword-tag">
-          #${escHtml(post.keyword)}
-        </span>
-
-        <span class="channel-tag">
-          @${escHtml(post.username)}
-        </span>
-
+        <span class="keyword-tag">#${escHtml(post.keyword)}</span>
+        <span class="channel-tag">@${escHtml(post.username)}</span>
       </div>
-
-      <div
-        class="telegram-widget-container"
-        data-username="${escHtml(post.username)}"
-        data-msgid="${post.msgId}"
-      >
-
+      <div class="telegram-widget-container" data-username="${escHtml(post.username)}" data-msgid="${post.msgId}">
         <div class="widget-skeleton"></div>
-
       </div>
-
       <div class="post-footer">
-
-        <a
-          class="open-btn"
-          href="https://t.me/${escHtml(post.username)}/${post.msgId}"
-          target="_blank"
-        >
-
-          Open Post ↗
-
-        </a>
-
-      </div>
-
-    `;
-
+        <a class="open-btn" href="https://t.me/${escHtml(post.username)}/${post.msgId}" target="_blank">Open Post ↗</a>
+      </div>`;
     grid.appendChild(card);
-
   });
-
-  document.getElementById('statsDisplay').innerHTML = `
-
-    Total Posts:
-    <strong>${allPosts.length}</strong>
-
-  `;
-
+  document.getElementById('statsDisplay').innerHTML = `Total Posts: <strong>${allPosts.length}</strong>`;
   renderPagination(allPosts.length);
-
   lazyLoadWidgets();
-
 }
 
-function escHtml(str){
-
-  return String(str)
-  .replace(/&/g,'&amp;')
-  .replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;')
-  .replace(/"/g,'&quot;');
-
-}
-
-/* TELEGRAM WIDGETS */
+function escHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function lazyLoadWidgets(){
-
-  const observer =
-  new IntersectionObserver((entries)=>{
-
+  const observer = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{
-
       if(!entry.isIntersecting) return;
-
       const el = entry.target;
-
       if(el.dataset.loaded) return;
-
       el.dataset.loaded = true;
-
       el.innerHTML = '';
-
-      const script =
-      document.createElement('script');
-
+      const script = document.createElement('script');
       script.async = true;
-
-      script.src =
-      'https://telegram.org/js/telegram-widget.js?22';
-
-      script.setAttribute(
-        'data-telegram-post',
-        `${el.dataset.username}/${el.dataset.msgid}`
-      );
-
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-post', `${el.dataset.username}/${el.dataset.msgid}`);
       script.setAttribute('data-width','100%');
-
       script.setAttribute('data-userpic','false');
-
-      const currentTheme =
-      document.documentElement.getAttribute(
-        'data-theme'
-      );
-
-      if(currentTheme === 'dark'){
-
-        script.setAttribute('data-dark','1');
-
-      }
-
+      if(document.documentElement.getAttribute('data-theme')==='dark') script.setAttribute('data-dark','1');
       el.appendChild(script);
-
-      setTimeout(()=>{
-
-        const iframe =
-        el.querySelector('iframe');
-
-        if(!iframe || iframe.offsetHeight < 120){
-
-          const card =
-          el.closest('.post-card');
-
-          if(card){
-
-            card.remove();
-
-          }
-
-        }
-
-      },7000);
-
       observer.unobserve(el);
-
     });
-
-  },{
-
-    rootMargin:'120px'
-
-  });
-
-  document
-  .querySelectorAll('.telegram-widget-container')
-  .forEach(el=>observer.observe(el));
-
+  },{rootMargin:'120px'});
+  document.querySelectorAll('.telegram-widget-container').forEach(el=>observer.observe(el));
 }
 
-/* SEARCH */
-
-function handleSearch(){
-
+document.getElementById('searchInput').addEventListener('input',()=>{
   currentPage = 1;
-
-  const term =
-  document
-  .getElementById('searchInput')
-  .value
-  .toLowerCase();
-
+  const term = document.getElementById('searchInput').value.toLowerCase();
   filteredData = allData.filter(item=>
-
     item.Keyword?.toLowerCase().includes(term) ||
-
     item.Link?.toLowerCase().includes(term) ||
-
-    item.Channel_Name?.toLowerCase().includes(term)
-
+    (item['Channel Name']||'').toLowerCase().includes(term)
   );
-
   renderPosts();
-
-}
-
-document
-.getElementById('searchInput')
-.addEventListener('input',handleSearch);
-
-/* SORT */
-
-document
-.getElementById('sortSelect')
-.addEventListener('change',(e)=>{
-
-  currentSort = e.target.value;
-
-  currentPage = 1;
-
-  renderPosts();
-
 });
 
-/* PAGINATION */
+document.getElementById('sortSelect').addEventListener('change',(e)=>{
+  currentSort = e.target.value;
+  currentPage = 1;
+  renderPosts();
+});
 
 function renderPagination(totalPosts){
-
-  const totalPages =
-  Math.ceil(totalPosts / POSTS_PER_PAGE);
-
+  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
   document.getElementById('paginationUI').innerHTML = `
-
-    <button
-      class="pg-btn"
-      onclick="changePage(-1)"
-      ${currentPage <= 1 ? 'disabled' : ''}
-    >
-
-      Previous
-
-    </button>
-
-    <span style="color:var(--text-muted)">
-
-      ${currentPage} / ${totalPages}
-
-    </span>
-
-    <button
-      class="pg-btn"
-      onclick="changePage(1)"
-      ${currentPage >= totalPages ? 'disabled' : ''}
-    >
-
-      Next
-
-    </button>
-
-  `;
-
+    <button class="pg-btn" onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>Previous</button>
+    <span style="color:var(--text-muted)">${currentPage} / ${totalPages}</span>
+    <button class="pg-btn" onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>`;
 }
 
 function changePage(step){
-
   currentPage += step;
-
   renderPosts();
-
-  window.scrollTo({
-
-    top:0,
-    behavior:'smooth'
-
-  });
-
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click',()=>{
+  const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme',newTheme);
+});
+document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+
 initRadar();
-
 </script>
-
 </body>
 </html>
-```
