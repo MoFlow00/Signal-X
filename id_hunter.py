@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
 # الإعدادات المباشرة لرابط ملفك
-CSV_URL = "https://raw.githubusercontent.com/Mohamed4088/Telegram_Scrapper2/main/telegram_data.csv"
+CSV_URL = "https://raw.githubusercontent.com/Mohamed4088/Signal-X/main/telegram_data.csv"
 OUTPUT_FILE = "telegram_data.csv"
 
 def get_latest_id(link):
