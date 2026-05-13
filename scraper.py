@@ -14,7 +14,8 @@ import json
 # ======================
 SAVE_FILE = "telegram_data.csv"
 PROGRESS_FILE = "progress_status.json"
-PAGES_TO_SCRAPE = 5
+# 💡 زودنا الصفحات لـ 15 عشان يجيب نتائج أكتر
+PAGES_TO_SCRAPE = 15 
 MAX_RUNTIME_SECONDS = 25 * 60 
 START_TIME = time.time()
 COLS = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
@@ -61,19 +62,29 @@ async def run_scraper():
     if not os.path.exists(SAVE_FILE):
         pd.DataFrame(columns=COLS).to_csv(SAVE_FILE, index=False)
 
-    print("\n🚀 Starting Playwright Search...")
+    print("\n🚀 Starting Deep Search...")
     progress = load_progress()
     
+    # 💡 حركة ذكية: بنرتب الكلمات عشوائياً عشان كل ساعة يجرب حظه في كلمات مختلفة
+    shuffled_keywords = KEYWORDS.copy()
+    random.shuffle(shuffled_keywords)
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
         
-        for keyword in KEYWORDS:
-            if time.time() - START_TIME > MAX_RUNTIME_SECONDS: break
-            last_page = progress.get(keyword, 0)
-            if last_page >= PAGES_TO_SCRAPE: continue
+        for keyword in shuffled_keywords:
+            if time.time() - START_TIME > MAX_RUNTIME_SECONDS: 
+                print("⏱ Time limit reached. Stopping...")
+                break
 
-            print(f"🔍 Keyword: {keyword}")
+            last_page = progress.get(keyword, 0)
+            if last_page >= PAGES_TO_SCRAPE: 
+                # 💡 لو الكلمة "قديمة" وبحثنا فيها كتير، احتمال نرجع نبحث من صفحة 1 كل فترة
+                if random.random() > 0.1: continue 
+                else: last_page = 0 
+
+            print(f"🔍 Keyword: {keyword} (Starting from page {last_page + 1})")
             page = await context.new_page()
             try:
                 encoded = urllib.parse.quote(keyword)
@@ -107,6 +118,7 @@ async def run_scraper():
                                 final_update[COLS].to_csv(SAVE_FILE, index=False, encoding="utf-8-sig")
                         
                         save_progress(keyword, cp)
+                        if time.time() - START_TIME > MAX_RUNTIME_SECONDS: break
                     except: break
             except: pass
             await page.close()
