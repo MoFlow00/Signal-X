@@ -13,10 +13,15 @@ MANUAL_DATA = "manual_channels.csv"
 FINAL_FILE = "telegram_data.csv"
 COLS = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
 
-# مفتاح ScrapingAnt (سجل مجاني من scrapingant.com)
+# مفتاح ScrapingAnt من GitHub Secrets
 SCRAPINGANT_API_KEY = os.getenv("SCRAPINGANT_API_KEY", "")
 
 def get_username(link):
+    """يستخرج اليوزرنيم من أي لينك تلجرام"""
+    # ⚠️ إصلاح NaN: تأكد إن الـ link string مش float/NaN
+    if pd.isna(link) or not isinstance(link, str):
+        return None
+    
     link = link.rstrip('/')
     username = link.split('/')[-1].replace('@', '')
     if not username or any(x in username for x in ["+", "joinchat", "t.me/c/"]):
@@ -34,13 +39,14 @@ def fetch_via_scrapingant(username):
     params = {
         'url': url,
         'x-api-key': SCRAPINGANT_API_KEY,
-        'browser': 'false',  # true لو عايز متصفح، false أسرع
+        'browser': 'false',
         'proxy_country': 'US'
     }
     
     try:
         r = requests.get(api_url, params=params, timeout=30)
         if r.status_code != 200:
+            print(f"⚠️ Status {r.status_code} for @{username}")
             return None
         
         content = r.text
@@ -56,7 +62,7 @@ def fetch_via_scrapingant(username):
             return int(max(ids, key=int))
             
     except Exception as e:
-        print(f"⚠️ Error: {e}")
+        print(f"⚠️ Error for @{username}: {e}")
     
     return None
 
@@ -75,7 +81,14 @@ def sync():
     df_manual = load_safe(MANUAL_DATA)
     
     combined = pd.concat([df_local, df_manual], ignore_index=True)
-    combined = combined.reindex(columns=COLS).drop_duplicates(subset=['Link'], keep='first')
+    combined = combined.reindex(columns=COLS)
+    
+    # ⚠️ إصلاح NaN: نظف عمود Link
+    combined['Link'] = combined['Link'].astype(str).replace('nan', pd.NA)
+    combined = combined.dropna(subset=['Link'])  # احذف الصفوف الفاضية
+    combined = combined[combined['Link'] != 'nan']  # تأكد إضافية
+    combined = combined.drop_duplicates(subset=['Link'], keep='first')
+    
     combined['LatestID'] = pd.to_numeric(combined['LatestID'], errors='coerce')
     
     mask = combined['LatestID'].isna() | (combined['LatestID'] == 0)
@@ -97,7 +110,7 @@ def sync():
         status = f"✅ ID={latest_id}" if latest_id else "❌ Failed"
         print(f"   {link:<40} {status}")
         
-        time.sleep(random.uniform(2, 5))  # Rate limiting
+        time.sleep(random.uniform(2, 5))
 
     for link, latest_id in results.items():
         if latest_id:
