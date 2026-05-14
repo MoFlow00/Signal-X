@@ -1,9 +1,9 @@
 import pandas as pd
-import asyncio
+import requests
 import re
 import os
+import time
 import random
-from playwright.async_api import async_playwright
 
 # ======================
 # CONFIG
@@ -13,6 +13,9 @@ MANUAL_DATA = "manual_channels.csv"
 FINAL_FILE = "telegram_data.csv"
 COLS = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
 
+# مفتاح ScrapingAnt (سجل مجاني من scrapingant.com)
+SCRAPINGANT_API_KEY = os.getenv("SCRAPINGANT_API_KEY", "")
+
 def get_username(link):
     link = link.rstrip('/')
     username = link.split('/')[-1].replace('@', '')
@@ -20,45 +23,45 @@ def get_username(link):
         return None
     return username
 
-async def fetch_with_playwright(page, username):
-    """يجيب آخر ID باستخدام Playwright"""
-    if not username:
+def fetch_via_scrapingant(username):
+    """يستخدم ScrapingAnt API لتجاوز Cloudflare"""
+    if not username or not SCRAPINGANT_API_KEY:
         return None
     
-    urls = [
-        f"https://t.me/s/{username}",           # الويب العامة (أسرع)
-        f"https://tgstat.com/channel/@{username}" # TGStat (backup)
-    ]
+    url = f"https://t.me/s/{username}"
+    api_url = "https://api.scrapingant.com/v2/general"
     
-    for url in urls:
-        try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=15000)
-            await asyncio.sleep(random.uniform(2, 4))  # انتظر تحميل JS
+    params = {
+        'url': url,
+        'x-api-key': SCRAPINGANT_API_KEY,
+        'browser': 'false',  # true لو عايز متصفح، false أسرع
+        'proxy_country': 'US'
+    }
+    
+    try:
+        r = requests.get(api_url, params=params, timeout=30)
+        if r.status_code != 200:
+            return None
+        
+        content = r.text
+        
+        # استخراج ID
+        ids = re.findall(r'data-post-id="(\d+)"', content)
+        if not ids:
+            ids = re.findall(rf'/{re.escape(username)}/(\d+)', content)
+        if not ids:
+            ids = re.findall(r'/(\d{3,})["/]', content)
+        
+        if ids:
+            return int(max(ids, key=int))
             
-            content = await page.content()
-            
-            # محاولة 1: t.me/s/username (الأفضل)
-            ids = re.findall(r'data-post-id="(\d+)"', content)
-            
-            # محاولة 2: روابط /username/123
-            if not ids:
-                ids = re.findall(rf'/{re.escape(username)}/(\d+)', content)
-            
-            # محاولة 3: أي رقم كبير في الروابط
-            if not ids:
-                ids = re.findall(r'/(\d{3,})["/]', content)
-            
-            if ids:
-                return int(max(ids, key=int))
-                
-        except Exception as e:
-            print(f"⚠️ {url} failed: {e}")
-            continue
+    except Exception as e:
+        print(f"⚠️ Error: {e}")
     
     return None
 
-async def sync():
-    print("🚀 GitHub Actions Mode: Playwright Sync...")
+def sync():
+    print("🚀 GitHub Actions Mode: ScrapingAnt API...")
     
     def load_safe(path):
         if not os.path.exists(path): 
@@ -83,45 +86,19 @@ async def sync():
         combined.to_csv(FINAL_FILE, index=False, encoding='utf-8-sig')
         return
 
-    print(f"🔍 Hunting {len(targets)} IDs via Playwright...")
+    print(f"🔍 Hunting {len(targets)} IDs via ScrapingAnt...")
     
     results = {}
-    
-    async with async_playwright() as p:
-        # تشغيل Chromium headless مع stealth options
-        browser = await p.chromium.launch(
-            headless=True,
-            args=[
-                '--disable-blink-features=AutomationControlled',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage'
-            ]
-        )
+    for link in targets:
+        username = get_username(link)
+        latest_id = fetch_via_scrapingant(username)
+        results[link] = latest_id
         
-        context = await browser.new_context(
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            viewport={'width': 1920, 'height': 1080},
-            locale='en-US'
-        )
+        status = f"✅ ID={latest_id}" if latest_id else "❌ Failed"
+        print(f"   {link:<40} {status}")
         
-        page = await context.new_page()
-        
-        # تخطي Cloudflare لو ظهر (انتظار ديناميكي)
-        for link in targets:
-            username = get_username(link)
-            latest_id = await fetch_with_playwright(page, username)
-            results[link] = latest_id
-            
-            status = f"✅ ID={latest_id}" if latest_id else "❌ Failed"
-            print(f"   {link:<40} {status}")
-            
-            # Rate limiting بين كل قناة والتانية
-            await asyncio.sleep(random.uniform(3, 6))
-        
-        await browser.close()
+        time.sleep(random.uniform(2, 5))  # Rate limiting
 
-    # تحديث البيانات
     for link, latest_id in results.items():
         if latest_id:
             combined.loc[combined['Link'] == link, 'LatestID'] = latest_id
@@ -131,4 +108,4 @@ async def sync():
     combined.to_csv(FINAL_FILE, index=False, encoding='utf-8-sig')
 
 if __name__ == "__main__":
-    asyncio.run(sync())
+    sync()
