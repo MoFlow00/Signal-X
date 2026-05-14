@@ -1,23 +1,34 @@
-name: Signal-X Sync
+name: Sync Telegram IDs
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */6 * * *'  # كل 6 ساعات
+  workflow_dispatch:
 
 jobs:
-  update-directory:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-      - run: pip install pandas
-      - run: python master_sync.py
-      - run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          python-version: '3.11'
+          
+      - name: Install deps
+        run: |
+          pip install pandas playwright
+          playwright install chromium
+          
+      - name: Run sync
+        run: python sync.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
           git add telegram_data.csv
-          git commit -m "Directory Sync [$(date)]" || echo "No changes"
+          git diff --cached --quiet || git commit -m "Update Telegram IDs"
           git push
