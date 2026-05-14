@@ -1,43 +1,20 @@
-name: Signal-X Global Sync (API Version)
-
+name: Signal-X Sync (Directory Mode)
 on:
-  workflow_dispatch: # للتشغيل اليدوي
+  workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *' # يعمل تلقائياً كل 3 ساعات
-
-permissions:
-  contents: write
-
+    - cron: '0 * * * *' # مزامنة كل ساعة
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas telethon requests
-
-      - name: Run Master Sync (MTProto API)
-        env:
-          # تأكد أن هذه الأسماء مطابقة لما وضعته في GitHub Secrets
-          TG_API_ID: ${{ secrets.TG_API_ID }}
-          TG_API_HASH: ${{ secrets.TG_API_HASH }}
-          TG_STRING_SESSION: ${{ secrets.TG_STRING_SESSION }}
-        run: python master_sync.py
-
-      - name: Commit and Push Changes
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.10' }
+      - run: pip install pandas
+      - run: python master_sync.py
+      - run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add telegram_data.csv
-          git commit -m "🚀 Auto-Sync: Updated LatestIDs via Telegram API [$(date)]" || echo "No changes to commit"
-          git push origin main
+          git commit -m "Directory Sync" || echo "No changes"
+          git push
