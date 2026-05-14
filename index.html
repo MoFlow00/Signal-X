@@ -1,132 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Signal-X | Directory</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<style>
-:root{ --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --blue:#0ea5e9; --text:#e6edf3; --text-muted:#8b949e; --border:rgba(240,246,252,.1); }
-[data-theme="light"]{ --bg:#f6f8fa; --surface:#ffffff; --surface2:#f0f2f5; --text:#1f2328; --text-muted:#57606a; --border:rgba(31,35,40,.12); }
-*{ margin:0; padding:0; box-sizing:border-box; }
-body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); transition:.25s; }
-header{ position:sticky; top:0; z-index:999; background:rgba(13,17,23,.92); backdrop-filter:blur(18px); border-bottom:1px solid var(--border); padding:15px 24px; }
-.header-inner{ max-width:1400px; margin:auto; display:flex; flex-direction:column; gap:15px; }
-.logo-area{ display:flex; justify-content:space-between; align-items:center; }
-.logo{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:22px; }
-.controls{ display:flex; gap:10px; }
-#searchInput{ flex:1; padding:12px 15px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text); outline:none; }
-.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); gap:20px; padding:24px; max-width:1400px; margin:auto; }
-.card{ background:var(--surface); border:1px solid var(--border); border-radius:20px; overflow:hidden; display:flex; flex-direction:column; height:550px; }
-.card-header{ padding:12px 16px; background:var(--surface2); display:flex; justify-content:space-between; align-items:center; }
-.tag{ font-size:11px; font-weight:700; background:rgba(14,165,233,0.1); color:var(--blue); padding:4px 10px; border-radius:20px; }
-.iframe-container{ flex:1; background:#fff; }
-iframe{ width:100%; height:100%; border:none; }
-.card-footer{ padding:12px; text-align:center; border-top:1px solid var(--border); }
-.join-btn{ text-decoration:none; color:var(--blue); font-weight:600; font-size:13px; }
-#pagination{ display:flex; justify-content:center; gap:10px; padding:20px; }
-.btn{ padding:10px 20px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal-X | Telegram Directory</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --blue: #58a6ff; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        header { position: sticky; top: 0; z-index: 100; background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 1rem; }
+        .container { max-width: 1400px; margin: auto; padding: 0 1rem; }
+        .search-box { width: 100%; max-width: 600px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #21262d; color: white; outline: none; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; padding: 2rem 0; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; height: 500px; display: flex; flex-direction: column; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .card-header { padding: 10px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.8rem; }
+        .iframe-wrap { flex: 1; background: #fff; position: relative; }
+        .iframe-wrap iframe { width: 100%; height: 100%; border: none; }
+        .card-footer { padding: 12px; border-top: 1px solid var(--border); text-align: center; }
+        .btn { display: inline-block; padding: 8px 16px; background: var(--blue); color: #0d1117; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; }
+        #pagination { display: flex; justify-content: center; gap: 10px; margin-bottom: 3rem; }
+        .page-btn { padding: 10px 20px; background: var(--card); border: 1px solid var(--border); color: var(--text); cursor: pointer; border-radius: 6px; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
 </head>
 <body>
 
 <header>
-  <div class="header-inner">
-    <div class="logo-area">
-      <div class="logo">📡 Signal-X</div>
-      <button class="btn" id="themeToggle">🌓</button>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin:0;">📡 Signal-X</h2>
+        <input type="text" id="search" class="search-box" placeholder="Search for channels or keywords...">
     </div>
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="Search channels or keywords..."/>
-    </div>
-  </div>
 </header>
 
-<div class="grid" id="mainGrid"></div>
-<div id="pagination"></div>
+<div class="container">
+    <div id="grid" class="grid"></div>
+    <div id="pagination"></div>
+</div>
 
 <script>
-const CSV_URL = 'https://raw.githubusercontent.com/moflow00/Signal-X/main/telegram_data.csv';
-let allData = [];
-let filteredData = [];
-let currentPage = 1;
-const ITEMS_PER_PAGE = 30;
+    const CSV_URL = 'https://raw.githubusercontent.com/MoFlow00/Signal-X/main/telegram_data.csv';
+    let data = [];
+    let filtered = [];
+    let page = 1;
+    const size = 24;
 
-async function loadData() {
-  const resp = await fetch(CSV_URL);
-  const text = await resp.text();
-  Papa.parse(text, {
-    header: true,
-    complete: (res) => {
-      allData = res.data.filter(r => r.Link && r['Channel Name']);
-      filteredData = [...allData];
-      render();
+    async function load() {
+        const r = await fetch(CSV_URL);
+        const text = await r.text();
+        Papa.parse(text, {
+            header: true,
+            complete: (results) => {
+                data = results.data.filter(x => x.Link && x['Channel Name']);
+                filtered = data;
+                render();
+            }
+        });
     }
-  });
-}
 
-function render() {
-  const grid = document.getElementById('mainGrid');
-  grid.innerHTML = '';
-  
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const pageItems = filteredData.slice(start, start + ITEMS_PER_PAGE);
+    function render() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        const start = (page - 1) * size;
+        const items = filtered.slice(start, start + size);
 
-  pageItems.forEach(item => {
-    const username = item.Link.split('t.me/')[1].split('/')[0];
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="tag">#${item.Keyword || 'Channel'}</span>
-        <span style="font-size:12px; color:var(--text-muted)">@${username}</span>
-      </div>
-      <div class="iframe-container">
-        <iframe src="https://tgstat.com/channel/@${username}/embed" loading="lazy"></iframe>
-      </div>
-      <div class="card-footer">
-        <a href="${item.Link}" target="_blank" class="join-btn">Open in Telegram ↗</a>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
+        items.forEach(item => {
+            const user = item.Link.split('/').pop();
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <div class="card-header">
+                    <span style="color: #8b949e;">#${item.Keyword || 'Misc'}</span>
+                    <strong>@${user}</strong>
+                </div>
+                <div class="iframe-wrap">
+                    <iframe src="https://tgstat.com/channel/@${user}/embed" loading="lazy"></iframe>
+                </div>
+                <div class="card-footer">
+                    <a href="${item.Link}" target="_blank" class="btn">View on Telegram</a>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+        updateNav();
+    }
 
-  updatePagination();
-}
+    function updateNav() {
+        const nav = document.getElementById('pagination');
+        const max = Math.ceil(filtered.length / size);
+        nav.innerHTML = `
+            <button class="page-btn" onclick="go(-1)" ${page===1?'disabled':''}>Previous</button>
+            <span style="align-self:center">${page} / ${max}</span>
+            <button class="page-btn" onclick="go(1)" ${page===max?'disabled':''}>Next</button>
+        `;
+    }
 
-function updatePagination() {
-  const nav = document.getElementById('pagination');
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  nav.innerHTML = `
-    <button class="btn" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>Prev</button>
-    <span>${currentPage} / ${totalPages}</span>
-    <button class="btn" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>Next</button>
-  `;
-}
+    function go(step) { page += step; render(); window.scrollTo(0,0); }
 
-function changePage(step) {
-  currentPage += step;
-  render();
-  window.scrollTo(0,0);
-}
+    document.getElementById('search').addEventListener('input', (e) => {
+        const t = e.target.value.toLowerCase();
+        filtered = data.filter(x => 
+            (x.Keyword || '').toLowerCase().includes(t) || 
+            (x['Channel Name'] || '').toLowerCase().includes(t)
+        );
+        page = 1;
+        render();
+    });
 
-document.getElementById('searchInput').addEventListener('input', (e) => {
-  const term = e.target.value.toLowerCase();
-  filteredData = allData.filter(item => 
-    (item.Keyword||'').toLowerCase().includes(term) || 
-    (item['Channel Name']||'').toLowerCase().includes(term)
-  );
-  currentPage = 1;
-  render();
-});
-
-document.getElementById('themeToggle').addEventListener('click', () => {
-  const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', theme);
-});
-
-loadData();
+    load();
 </script>
 </body>
 </html>
