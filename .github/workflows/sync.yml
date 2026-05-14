@@ -2,7 +2,7 @@ name: Sync Telegram IDs
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # كل 6 ساعات
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -17,13 +17,12 @@ jobs:
           
       - name: Install deps
         run: |
-          pip install pandas playwright
-          playwright install chromium
+          pip install pandas requests
           
       - name: Run sync
         run: python sync.py
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SCRAPINGANT_API_KEY: ${{ secrets.SCRAPINGANT_API_KEY }}
           
       - name: Commit changes
         run: |
