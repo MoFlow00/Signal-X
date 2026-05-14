@@ -1,20 +1,23 @@
-name: Signal-X Sync (Directory Mode)
+name: Signal-X Sync
+
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *' # مزامنة كل ساعة
+    - cron: '0 * * * *'
+
 jobs:
-  build:
+  update-directory:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.10' }
+        with:
+          python-version: '3.10'
       - run: pip install pandas
       - run: python master_sync.py
       - run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add telegram_data.csv
-          git commit -m "Directory Sync" || echo "No changes"
+          git commit -m "Directory Sync [$(date)]" || echo "No changes"
           git push
