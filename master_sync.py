@@ -1,119 +1,91 @@
 import pandas as pd
-import asyncio
-import os
+import requests
 import re
+import os
 import time
-from telethon import TelegramClient
-from telethon.sessions import StringSession
+import random
+from concurrent.futures import ThreadPoolExecutor
 
 # ======================
-# CONFIG & SECRETS
+# CONFIG
 # ======================
-API_ID = int(os.getenv('TG_API_ID', 0))
-API_HASH = os.getenv('TG_API_HASH', '')
-STRING_SESSION = os.getenv('TG_STRING_SESSION', '')
-
 LOCAL_DATA = "telegram_data.csv"
 MANUAL_DATA = "manual_channels.csv"
-REMOTE_CHANNELS = "https://raw.githubusercontent.com/MoFlow00/Telegram_Scrapper/refs/heads/main/telegram_channels.csv"
 FINAL_FILE = "telegram_data.csv"
 COLS = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
 
-# ======================
-# HELPERS
-# ======================
-def is_clean_lang(text):
-    if not text or pd.isna(text): return True
-    # يسمح فقط بالعربي والإنجليزي والأرقام والرموز
-    pattern = r'^[\u0600-\u06FFa-zA-Z0-9\s._\-@()]+$'
-    return bool(re.match(pattern, str(text)))
+# مصدر خارجي (Mirror/Aggregator) بعيد عن خوادم تيليجرام
+# سنستخدم TGStat كونه يمتلك أرشفة قوية
+EXTERNAL_SOURCE_URL = "https://tgstat.com/channel/@{username}"
 
-def safe_load_csv(path):
-    if not os.path.exists(path): return pd.DataFrame(columns=COLS)
+# وكلاء مستخدم (User-Agents) متنوعة لتبدو الطلبات طبيعية
+AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+]
+
+def get_latest_id_external(link):
+    """سحب أحدث ID من مصدر خارجي (TGStat) لتجنب حظر تيليجرام"""
     try:
-        # اكتشاف الفاصلة (, أو ;) تلقائياً وتخطي الأخطاء
-        return pd.read_csv(path, sep=None, engine='python', on_bad_lines='skip', quotechar='"')
+        # استخراج اليوزرنيم
+        username = link.rstrip('/').split('/')[-1].replace('@', '')
+        if not username or "+" in username or "joinchat" in username:
+            return None
+
+        # الطلب من المصدر الخارجي
+        url = EXTERNAL_SOURCE_URL.format(username=username)
+        headers = {'User-Agent': random.choice(AGENTS)}
+        
+        # انتظار عشوائي بسيط جداً (أقل بكثير من الـ API الرسمي)
+        time.sleep(random.uniform(1.5, 3.0)) 
+        
+        r = requests.get(url, headers=headers, timeout=20)
+        if r.status_code != 200:
+            return None
+
+        # البحث عن أحدث ID في روابط المنشورات داخل الموقع
+        # الروابط في TGStat تكون بصيغة /channel/@username/123
+        ids = re.findall(rf'/{username}/(\d+)"', r.text)
+        
+        if ids:
+            return int(max(ids, key=int))
+        return None
     except:
-        return pd.DataFrame(columns=COLS)
+        return None
 
-async def hunt_latest_ids(links):
-    """استخدام Telethon لجلب الـ IDs بدون بلوك وبسرعة عالية"""
-    results = {}
-    async with TelegramClient(StringSession(STRING_SESSION), API_ID, API_HASH) as client:
-        for link in links:
-            try:
-                # استخراج اليوزرنيم من اللينك
-                username = link.rstrip('/').split('/')[-1]
-                if not username or "+" in username or "joinchat" in username:
-                    results[link] = None
-                    continue
-                
-                # الحصول على آخر رسالة (لا يتطلب الاشتراك في القناة)
-                entity = await client.get_entity(username)
-                messages = await client.get_messages(entity, limit=1)
-                
-                if messages:
-                    results[link] = messages[0].id
-                    print(f"✅ {username} -> ID: {messages[0].id}")
-                else:
-                    results[link] = None
-            except Exception as e:
-                print(f"⚠️ Skipping {link}: {str(e)[:50]}")
-                results[link] = None
-            
-            # تأخير بسيط جداً للامتثال لقواعد تليجرام
-            await asyncio.sleep(0.3)
-    return results
-
-# ======================
-# MAIN SYNC
-# ======================
-def main():
-    print("🔄 Loading and Merging Sources...")
-    df_local = safe_load_csv(LOCAL_DATA)
-    df_manual = safe_load_csv(MANUAL_DATA)
+def sync():
+    print("🚀 External Source Mode: Fetching via TGStat...")
     
-    try:
-        df_remote = pd.read_csv(REMOTE_CHANNELS, on_bad_lines='skip')
-        df_remote.columns = df_remote.columns.str.strip().str.replace('_', ' ')
-        df_remote.rename(columns={'ChannelName': 'Channel Name', 'channel name': 'Channel Name'}, inplace=True)
-    except:
-        df_remote = pd.DataFrame(columns=COLS)
+    # تحميل الملفات (نفس المنطق السابق)
+    def load_safe(path):
+        if not os.path.exists(path): return pd.DataFrame(columns=COLS)
+        return pd.read_csv(path, sep=None, engine='python', on_bad_lines='skip')
 
-    combined = pd.concat([df_local, df_manual, df_remote], ignore_index=True)
+    df_local = load_safe(LOCAL_DATA)
+    df_manual = load_safe(MANUAL_DATA)
     
-    # ضمان وجود الأعمدة الصحيحة وحذف التكرار
+    combined = pd.concat([df_local, df_manual], ignore_index=True)
     combined = combined.reindex(columns=COLS).drop_duplicates(subset=['Link'], keep='first')
 
-    # فلتر اللغة (تطهير قاعدة البيانات)
-    initial_len = len(combined)
-    combined = combined[
-        combined['Channel Name'].apply(is_clean_lang) & 
-        combined['Keyword'].apply(is_clean_lang)
-    ]
-    print(f"🧹 Language Filter: Removed {initial_len - len(combined)} bad channels.")
-
-    # تحديد القنوات التي تحتاج IDs
+    # تحديد القنوات التي تحتاج تحديث
     combined['LatestID'] = pd.to_numeric(combined['LatestID'], errors='coerce')
     mask = combined['LatestID'].isna()
     targets = combined.loc[mask, 'Link'].tolist()
 
-    if targets and STRING_SESSION:
-        print(f"🎯 Hunting {len(targets)} IDs via API...")
-        # تشغيل المحرك غير المتزامن
-        id_results = asyncio.run(hunt_latest_ids(targets))
+    if targets:
+        print(f"🎯 Hunting {len(targets)} IDs via External Aggregator...")
         
-        # دمج النتائج
-        combined['LatestID'] = combined['LatestID'].astype(object)
-        combined.loc[mask, 'LatestID'] = [id_results.get(link) for link in targets]
-        combined['LatestID'] = pd.to_numeric(combined['LatestID'], errors='coerce')
+        # استخدام ThreadPool لزيادة السرعة (عدد عمال متزن)
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            results = list(ex.map(get_latest_id_external, targets))
+        
+        combined.loc[mask, 'LatestID'] = results
+        print(f"✅ Sync Complete. Found {len([r for r in results if r])} IDs.")
     else:
-        if not STRING_SESSION: print("❌ Error: TG_STRING_SESSION is missing!")
-        else: print("😎 Everything is already up to date.")
+        print("😎 All IDs are already cached.")
 
-    # حفظ الملف النهائي بترميز UTF-8
     combined.to_csv(FINAL_FILE, index=False, encoding='utf-8-sig')
-    print(f"✅ Sync Finished. Total channels: {len(combined)}")
 
 if __name__ == "__main__":
-    main()
+    sync()
