@@ -21,27 +21,187 @@ START_TIME = time.time()
 COLS = ['Keyword', 'Channel Name', 'Link', 'Subscribers', 'LatestID']
 
 KEYWORDS = [
-    "premium apk", "pro apps", "modded apps", "unlocked apk", "android mod", "cracked software", 
-    "nova launcher setup", "android apps paid free", "mod apk download", "apk hacks", "تطبيقات مهكرة", 
-    "برامج برو", "أندرويد مدفوع", "ألعاب مهكرة", "تطبيقات معدلة", "نسخة احترافية",
-    "machine learning", "best ai tools", "gpt4", "ai automation", "chatgpt tools", "ai prompts", 
-    "openai tools", "llm tools", "ذكاء اصطناعي", "أدوات الذكاء", "تقنيات حديثة", "شروحات تقنية", "مواقع ذكاء اصطناعي",
-    "sora ai", "claude ai", "gemini ai", "cursor ai", "bolt ai", "lovable ai", "deepseek", "suno ai", "capcut pro",
-    "free courses", "udemy coupons", "programming scripts", "github repos", "python coding", "excel tutorials", 
-    "data analysis python", "automation scripts", "كورسات مجانية", "دورة برمجية", "تعليم إكسيل", "تعلم البرمجة",
-    "pdf books", "engineering books", "medical books", "ielts materials", "university notes", "study resources", 
-    "research papers", "academic resources", "ebooks free", "ملفات pdf", "كتب جامعية",
-    "uae offers", "dubai discounts", "coupon codes", "amazon deals uae", "noon coupons", "uae promo codes", 
-    "dubai deals today", "عروض الإمارات", "أكواد خصم", "تخفيضات دبي", "وفر فلوسك",
-    "iptv links", "netflix premium", "movies hd", "live tv", "series hd", "arab movies", "قنوات مشفرة", 
-    "أفلام وثائقية", "بث مباشر", "سيرفرات iptv", "مسلسلات حصرية",
-    "premium accounts", "shared accounts", "streaming accounts", "spotify premium", "canva pro", "youtube premium", 
-    "adobe crack", "windows activator", "office activator", "software keys", "كورسات مدفوعة مجانا",
-    "gaming leaks", "game mods", "steam free games", "pc games repack", "gaming news", "ps5 jailbreak", "قنوات ألعاب",
-    "ethical hacking", "bug bounty", "osint tools", "cyber security", "kali linux", "هكر أخلاقي", "أمن سيبراني",
-    "notion templates", "productivity apps", "video editing", "photoshop resources", "ui ux design", "مونتاج فيديو", "تصميم جرافيك",
-    "side hustle", "make money online", "dropshipping", "الربح من الانترنت", "العمل اونلاين", "dubai tech", "uae startups", 
-    "dubai events", "uae jobs", "وظائف دبي", "فعاليات دبي"
+
+    # ─────────────────────────────
+    # IPTV + STREAMING
+    # ─────────────────────────────
+
+    "iptv",
+    "iptv عربي",
+    "سيرفرات iptv",
+    "اشتراك iptv",
+    "بث مباشر",
+    "قنوات رياضية",
+    "bein sports",
+    "شاهد vip",
+    "netflix مجانا",
+    "osn مجانا",
+    "افلام",
+    "مسلسلات",
+    "movie app",
+    "streaming apps",
+    "live tv",
+    "movies hd",
+    "series hd",
+    "anime عربي",
+    "تطبيقات مشاهدة",
+    "تطبيق افلام",
+
+    # ─────────────────────────────
+    # PREMIUM APPS + MODS
+    # ─────────────────────────────
+
+    "تطبيقات مهكرة",
+    "برامج مهكرة",
+    "apk مهكر",
+    "apk معدل",
+    "premium apps",
+    "spotify مهكر",
+    "youtube premium",
+    "canva pro",
+    "capcut pro",
+    "vpn premium",
+    "netflix premium",
+    "chatgpt plus",
+    "alight motion",
+    "adobe crack",
+    "windows activator",
+    "office activator",
+    "premium apk",
+    "mod apk",
+    "modded apps",
+    "unlocked apk",
+    "android mod",
+
+    # ─────────────────────────────
+    # AI + TOOLS
+    # ─────────────────────────────
+
+    "ذكاء اصطناعي",
+    "ادوات ai",
+    "ai tools",
+    "chatgpt",
+    "cursor ai",
+    "claude ai",
+    "gemini ai",
+    "deepseek",
+    "midjourney",
+    "suno ai",
+    "bolt ai",
+    "lovable ai",
+    "openai",
+    "مولد صور ai",
+    "بوتات تليجرام",
+    "telegram bots",
+    "free ai tools",
+    "ai prompts",
+
+    # ─────────────────────────────
+    # TECH + INTERNET HACKS
+    # ─────────────────────────────
+
+    "تريكات",
+    "خدع",
+    "مواقع مفيدة",
+    "تطبيقات مفيدة",
+    "vpn مجاني",
+    "proxy مجاني",
+    "telegram tools",
+    "free api",
+    "open source tools",
+    "ادوات تليجرام",
+    "مواقع سرية",
+    "مواقع رهيبة",
+    "ادوات مجانية",
+    "اختراق الواي فاي",
+
+    # ─────────────────────────────
+    # COURSES + BOOKS
+    # ─────────────────────────────
+
+    "كورسات مجانية",
+    "دورات مدفوعة مجانا",
+    "udemy مجانا",
+    "coursera مجانا",
+    "كورس برمجة",
+    "تعلم البرمجة",
+    "تعلم الذكاء الاصطناعي",
+    "كتب pdf",
+    "كتب تقنية",
+    "ملفات pdf",
+    "ebooks free",
+    "study resources",
+    "research papers",
+
+    # ─────────────────────────────
+    # GAMING
+    # ─────────────────────────────
+
+    "العاب مهكرة",
+    "game mods",
+    "steam free games",
+    "pc games repack",
+    "ps5 jailbreak",
+    "gaming leaks",
+    "قنوات العاب",
+    "العاب pc",
+    "العاب اندرويد",
+
+    # ─────────────────────────────
+    # CYBER SECURITY
+    # ─────────────────────────────
+
+    "هكر اخلاقي",
+    "امن سيبراني",
+    "ethical hacking",
+    "bug bounty",
+    "osint tools",
+    "cyber security",
+    "kali linux",
+
+    # ─────────────────────────────
+    # DESIGN + EDITING
+    # ─────────────────────────────
+
+    "مونتاج فيديو",
+    "تصميم جرافيك",
+    "video editing",
+    "photoshop resources",
+    "ui ux",
+    "notion templates",
+    "productivity apps",
+
+    # ─────────────────────────────
+    # MONEY + OFFERS
+    # ─────────────────────────────
+
+    "الربح من الانترنت",
+    "العمل اونلاين",
+    "side hustle",
+    "make money online",
+    "dropshipping",
+    "عروض الامارات",
+    "اكواد خصم",
+    "كوبونات خصم",
+    "تخفيضات دبي",
+    "amazon deals",
+    "noon coupons",
+    "وفر فلوسك",
+
+    # ─────────────────────────────
+    # TELEGRAM DISCOVERY
+    # ─────────────────────────────
+
+    "قنوات تليجرام",
+    "telegram channels",
+    "telegram عربي",
+    "telegram search",
+    "telegram directory",
+    "قنوات مفيدة",
+    "قنوات ai",
+    "قنوات افلام",
+    "قنوات تطبيقات"
+
 ]
 
 def load_progress():
